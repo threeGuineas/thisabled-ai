@@ -1,0 +1,58 @@
+# === Core ===
+python-dotenv==1.0.1
+pyyaml==6.0.2
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.13.1
+scikit-learn==1.5.2
+
+# === Deep Learning / NLP ===
+torch==2.4.1
+transformers==4.46.3
+sentence-transformers==3.3.1
+datasets==3.1.0
+accelerate==1.1.1
+tokenizers==0.20.3
+sentencepiece==0.2.0
+protobuf==4.25.5
+
+# === Korean NLP ===
+konlpy==0.6.0
+soynlp==0.0.493
+kiwipiepy==0.20.1
+
+# === Tree Models & Tuning ===
+lightgbm==4.5.0
+xgboost==2.1.2
+optuna==4.1.0
+
+# === XAI & Fairness ===
+shap==0.46.0
+fairlearn==0.11.0
+
+# === Experiment Tracking ===
+wandb==0.18.7
+mlflow==2.18.0
+
+# === API ===
+openai==1.55.3
+anthropic==0.40.0
+tenacity==9.0.0
+
+# === Visualization ===
+matplotlib==3.9.2
+seaborn==0.13.2
+koreanize-matplotlib==0.1.1
+plotly==5.24.1
+
+# === Data formats ===
+pyarrow==17.0.0
+tables==3.10.1
+h5py==3.12.1
+
+# === Dev ===
+jupyter==1.1.1
+ipykernel==6.29.5
+ruff==0.7.4
+pytest==8.3.3
+pre-commit==4.0.1
