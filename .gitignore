@@ -1,0 +1,70 @@
+# === Data & Models ===
+data/raw/**
+data/synthetic/**
+data/processed/**
+!data/raw/.gitkeep
+!data/synthetic/.gitkeep
+!data/processed/.gitkeep
+!data/README.md
+*.csv
+*.parquet
+*.h5
+*.hdf5
+*.pkl
+*.joblib
+models/**
+!models/.gitkeep
+!models/checkpoints/
+!models/checkpoints/.gitkeep
+*.ckpt
+*.bin
+*.safetensors
+*.pt
+*.pth
+
+# === Secrets ===
+.env
+.env.*
+!.env.example
+configs/secrets.yaml
+*.key
+
+# === Experiment Tracking ===
+wandb/
+mlruns/
+runs/
+optuna.db
+
+# === Cache ===
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# === IDE ===
+.vscode/settings.json
+.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === venv ===
+.venv/
+venv/
+env/
+
+# === Colab ===
+sample_data/
+
+# === Build artifacts ===
+dist/
+build/
+*.egg-info/

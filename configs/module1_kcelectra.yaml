@@ -1,0 +1,46 @@
+# Module ① — KcELECTRA 기반 4단계 위험도 분류
+model:
+  name: "beomi/KcELECTRA-base-v2022"
+  num_labels: 4
+  max_length: 128
+  dropout: 0.1
+
+training:
+  batch_size: 32
+  eval_batch_size: 64
+  num_epochs: 5
+  lr: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  grad_accum_steps: 1
+  fp16: true
+  seed: 42
+
+loss:
+  type: "focal"
+  focal_gamma: 2.0
+  # 클래스 불균형 대응: [정상, 주의, 경고, 긴급] 별 가중치 (없으면 null)
+  alpha: null
+
+stacking:
+  enabled: true
+  meta_learner: "lightgbm"
+  lgbm_params:
+    objective: "multiclass"
+    num_class: 4
+    metric: "multi_logloss"
+    n_estimators: 500
+    learning_rate: 0.05
+    num_leaves: 31
+    max_depth: -1
+    random_state: 42
+
+paths:
+  checkpoint_dir: "models/checkpoints/module1"
+  report_dir: "reports/validation_reports/module1"
+
+labels:
+  - "정상"   # 0
+  - "주의"   # 1
+  - "경고"   # 2
+  - "긴급"   # 3

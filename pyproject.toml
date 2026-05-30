@@ -1,0 +1,35 @@
+[project]
+name = "thisabled-ai"
+version = "0.1.0"
+description = "ThisAbled AI — 장애인 소셜 안전·매칭 예측 모델링"
+requires-python = "==3.11.*"
+readme = "README.md"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["notebooks/*.ipynb", ".venv", "/data", "/models"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+]
+ignore = [
+    "E501",  # line length handled by formatter
+    "N812",  # allow `import torch.nn.functional as F` (PyTorch convention)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"

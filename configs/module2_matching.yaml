@@ -1,0 +1,35 @@
+# Module ② — 사용자 호환성 매칭 (SBERT 임베딩 + LightGBM Ranker)
+embedding:
+  sbert_model_name: "jhgan/ko-sroberta-multitask"
+  max_seq_length: 256
+  batch_size: 64
+  pooling: "mean"  # mean | cls
+
+features:
+  use_cosine: true
+  use_l1_diff: true
+  use_l2_diff: true
+  use_hadamard: true
+  meta_features: []  # 예: ["age_diff", "region_match"]
+
+ranker:
+  type: "lightgbm_lambdamart"
+  lgbm_params:
+    objective: "lambdarank"
+    metric: "ndcg"
+    n_estimators: 1000
+    learning_rate: 0.05
+    num_leaves: 63
+    min_data_in_leaf: 20
+    random_state: 42
+    ndcg_eval_at: [5, 10]
+
+training:
+  test_size: 0.2
+  val_size: 0.1
+  seed: 42
+
+paths:
+  embedding_cache: "data/processed/module2_embeddings.h5"
+  model_path: "models/checkpoints/module2/ranker.txt"
+  report_dir: "reports/validation_reports/module2"
