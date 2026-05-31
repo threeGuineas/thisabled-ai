@@ -92,7 +92,9 @@ def train_module1(
 
     alpha = loss_cfg.get("alpha")
     alpha_t = torch.tensor(alpha, dtype=torch.float32) if alpha else None
-    focal = FocalLoss(gamma=loss_cfg["focal_gamma"], alpha=alpha_t)
+    # type=ce면 γ=0 강제 (Focal Loss with γ=0 = weighted CE, 수학적 동치)
+    gamma = 0.0 if loss_cfg.get("type", "focal") == "ce" else loss_cfg["focal_gamma"]
+    focal = FocalLoss(gamma=gamma, alpha=alpha_t)
 
     ckpt_dir = project_root / model_cfg.get("checkpoint_dir", cfg["paths"]["checkpoint_dir"])
     args = TrainingArguments(
@@ -127,6 +129,10 @@ def train_module1(
     )
 
     train_result = trainer.train()
+    # load_best_model_at_end=True 라 trainer.model이 best 모델임.
+    # 부모 dir에 저장해야 from_pretrained(ckpt_dir)가 바로 동작.
+    trainer.save_model(str(ckpt_dir))
+    tokenizer.save_pretrained(str(ckpt_dir))
     eval_result = trainer.evaluate()
 
     return {

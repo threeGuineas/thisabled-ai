@@ -1,0 +1,47 @@
+# Module ① — KcELECTRA + CE (Focal Loss 베이스라인과 비교용)
+# 차이점: loss.type = "ce" + epochs 3 (베이스라인 분석에서 overfitting epoch 3+ 확인)
+model:
+  name: "beomi/KcELECTRA-base-v2022"
+  num_labels: 4
+  max_length: 128
+  dropout: 0.1
+
+training:
+  batch_size: 32
+  eval_batch_size: 64
+  num_epochs: 3   # ← 5 → 3 (베이스라인 분석상 epoch 2가 best)
+  lr: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  grad_accum_steps: 1
+  fp16: true
+  seed: 42
+
+loss:
+  type: "ce"          # ← focal → ce
+  focal_gamma: 0.0    # 무시됨 (type=ce)
+  # 정상 다수, 주의 약함 → 주의에 가중치 조금 더
+  alpha: [1.0, 1.5, 1.0, 1.0]   # [정상, 주의, 경고, 긴급]
+
+stacking:
+  enabled: true
+  meta_learner: "lightgbm"
+  lgbm_params:
+    objective: "multiclass"
+    num_class: 4
+    metric: "multi_logloss"
+    n_estimators: 500
+    learning_rate: 0.05
+    num_leaves: 31
+    max_depth: -1
+    random_state: 42
+
+paths:
+  checkpoint_dir: "models/checkpoints/module1_ce"
+  report_dir: "reports/validation_reports/module1"
+
+labels:
+  - "정상"
+  - "주의"
+  - "경고"
+  - "긴급"
