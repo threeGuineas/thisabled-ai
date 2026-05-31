@@ -1,13 +1,16 @@
-"""GPT-4o-mini로 긴급(3) 합성 데이터 생성.
+"""Gemini API로 긴급(3) 합성 데이터 생성.
 
 각 카테고리(3a/3b/3c/3d) + boundary 반례를 emergency_scenarios.md §5 spec대로 생성.
-환경변수: OPENAI_API_KEY 필수.
-비용 캡: COST_CAP_USD (기본 $5).
+환경변수: GEMINI_API_KEY 필수 (Google AI Studio에서 무료 발급).
+
+무료 tier 제약:
+- gemini-2.0-flash: 분당 15회, 일 1,500회 → 60/15 = 4초 간격 강제
+- 우리 1,170건 / 20건당 호출 = 63 calls → 약 5분 소요
 
 Usage:
     python scripts/synthesize_emergency.py                   # 전체 생성
     python scripts/synthesize_emergency.py --categories 3a   # 특정 카테고리만
-    python scripts/synthesize_emergency.py --dry-run         # 비용·요청 수만 출력
+    python scripts/synthesize_emergency.py --dry-run         # 호출 수만 출력
 """
 
 from __future__ import annotations
@@ -33,21 +36,24 @@ from src.data.synthesis_prompts import (  # noqa: E402
 )
 
 OUT_ROOT = ROOT / "data" / "synthetic" / "emergency"
-COST_CAP_USD = 5.0
-MODEL = "gpt-4o-mini"
+MODEL = "gemini-2.0-flash"  # 무료 tier — 15 RPM / 1,500 RPD
 BATCH_SIZE = 20  # 한 LLM 호출당 생성 건수
+RATE_LIMIT_SLEEP = 4.5  # 15 RPM 안전 마진 (60/15 = 4초)
+MAX_OUTPUT_TOKENS = 8192  # flash 최대 — 20건 JSONL 잘림 방지
+MAX_EMPTY_STREAK = 5  # 한 split에서 연속 빈/실패 배치 허용치 (무한 루프 가드)
 
-# gpt-4o-mini 단가 (per 1M tokens, 2025년 기준)
-PRICE_INPUT = 0.15 / 1e6
-PRICE_OUTPUT = 0.60 / 1e6
-
-
-def _estimate_cost(prompt_tokens: int, completion_tokens: int) -> float:
-    return prompt_tokens * PRICE_INPUT + completion_tokens * PRICE_OUTPUT
+# 안전 분류기 학습용 합성이므로 Gemini 기본 필터를 끈다.
+# (그루밍/성적유인/협박/자해 신호 = 탐지 대상. 필터 켜면 3b/3c/3d가 차단됨)
+SAFETY_SETTINGS = [
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+]
 
 
 def _parse_jsonl(text: str) -> list[dict]:
-    """LLM 출력을 JSONL로 파싱, 실패 라인은 skip."""
+    """LLM 출력을 JSONL로 파싱, 실패 라인은 skip. 코드펜스도 제거."""
     items = []
     for line in text.strip().splitlines():
         line = line.strip()
@@ -60,8 +66,26 @@ def _parse_jsonl(text: str) -> list[dict]:
     return items
 
 
+def _extract_text(resp) -> str:
+    """응답에서 텍스트를 안전하게 추출.
+
+    후보가 차단(SAFETY)되거나 비면 resp.text 접근이 예외를 던지므로
+    candidates.parts를 직접 순회한다. 추출 실패 시 빈 문자열 반환.
+    """
+    try:
+        return resp.text or ""
+    except Exception:
+        pass
+    text = ""
+    for cand in getattr(resp, "candidates", None) or []:
+        content = getattr(cand, "content", None)
+        for part in getattr(content, "parts", None) or []:
+            text += getattr(part, "text", None) or ""
+    return text
+
+
 def _call_llm(client, category: str, n: int, seed: int) -> tuple[list[dict], int, int]:
-    """LLM 호출 → (생성된 dict 리스트, prompt tokens, completion tokens)."""
+    """Gemini 호출 → (생성된 dict 리스트, prompt tokens, completion tokens)."""
     rng = random.Random(seed)
     personas = rng.sample(category_personas(category), min(4, len(category_personas(category))))
     contexts = rng.sample(CONTEXTS, min(3, len(CONTEXTS)))
@@ -75,20 +99,22 @@ def _call_llm(client, category: str, n: int, seed: int) -> tuple[list[dict], int
         styles=styles,
     )
 
-    resp = client.chat.completions.create(
+    resp = client.models.generate_content(
         model=MODEL,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=0.9,
-        max_tokens=4000,
-        seed=seed,
+        contents=user_prompt,
+        config={
+            "system_instruction": SYSTEM_PROMPT,
+            "temperature": 0.9,
+            "max_output_tokens": MAX_OUTPUT_TOKENS,
+            "safety_settings": SAFETY_SETTINGS,
+        },
     )
 
-    text = resp.choices[0].message.content or ""
+    text = _extract_text(resp)
     items = _parse_jsonl(text)
-    return items, resp.usage.prompt_tokens, resp.usage.completion_tokens
+    in_tok = resp.usage_metadata.prompt_token_count if resp.usage_metadata else 0
+    out_tok = resp.usage_metadata.candidates_token_count if resp.usage_metadata else 0
+    return items, in_tok, out_tok
 
 
 def _enrich(items: list[dict], category: str, split: str) -> list[dict]:
@@ -129,17 +155,18 @@ def synthesize(
     dry_run: bool = False,
 ) -> dict:
     if not dry_run:
-        api_key = os.environ.get("OPENAI_API_KEY")
+        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         if not api_key:
-            raise SystemExit("OPENAI_API_KEY 환경변수가 없습니다.")
-        from openai import OpenAI
+            raise SystemExit("GEMINI_API_KEY 환경변수가 없습니다 (또는 GOOGLE_API_KEY).")
+        from google import genai
 
-        client = OpenAI(api_key=api_key)
+        client = genai.Client(api_key=api_key)
     else:
         client = None
 
-    total_cost = 0.0
     total_calls = 0
+    total_in_tok = 0
+    total_out_tok = 0
     summary: dict = {}
 
     for cat in categories:
@@ -166,49 +193,74 @@ def synthesize(
 
             if dry_run:
                 n_calls = (needed + BATCH_SIZE - 1) // BATCH_SIZE
-                est_cost = n_calls * _estimate_cost(1500, 1600)
-                print(f"  → {n_calls} LLM 호출, 예상 비용 ${est_cost:.4f}")
+                eta_sec = n_calls * RATE_LIMIT_SLEEP
+                print(f"  → {n_calls} LLM 호출, 예상 시간 ~{eta_sec:.0f}초")
                 total_calls += n_calls
-                total_cost += est_cost
                 summary[cat][split] = len(existing)
                 continue
 
             batch_seed = 42
+            empty_streak = 0  # 연속 빈/실패 배치 — MAX_EMPTY_STREAK 도달 시 split 중단
             while needed > 0:
-                if total_cost >= COST_CAP_USD:
-                    print(f"💸 비용 캡 ${COST_CAP_USD} 도달 — 중단")
-                    summary[cat][split] = len(existing)
-                    return summary | {"total_cost": total_cost, "total_calls": total_calls}
-
                 n = min(BATCH_SIZE, needed)
                 try:
                     items, in_tok, out_tok = _call_llm(client, cat, n, batch_seed)
                     enriched = _enrich(items, cat, split)
-                    existing.extend(enriched)
-                    cost = _estimate_cost(in_tok, out_tok)
-                    total_cost += cost
                     total_calls += 1
+                    total_in_tok += in_tok
+                    total_out_tok += out_tok
+                    batch_seed += 1
+
+                    if not enriched:
+                        empty_streak += 1
+                        print(
+                            f"  call#{total_calls}: +0건 ⚠ 빈 배치 "
+                            f"({empty_streak}/{MAX_EMPTY_STREAK}) — 차단/파싱 실패 가능"
+                        )
+                        if empty_streak >= MAX_EMPTY_STREAK:
+                            print(
+                                f"  ✗ [{cat}/{split}] 연속 {MAX_EMPTY_STREAK}회 빈 결과 — "
+                                f"중단 ({len(existing)}/{target})"
+                            )
+                            break
+                        time.sleep(RATE_LIMIT_SLEEP)
+                        continue
+
+                    empty_streak = 0
+                    existing.extend(enriched)
                     print(
                         f"  call#{total_calls}: +{len(enriched)}건 "
-                        f"(in {in_tok}/out {out_tok} tok, ${cost:.4f}, 누계 ${total_cost:.4f})"
+                        f"(in {in_tok}/out {out_tok} tok)"
                     )
                     # 누적 저장 (중간 실패 대비)
                     with out_path.open("w", encoding="utf-8") as f:
                         for it in existing:
                             f.write(json.dumps(it, ensure_ascii=False) + "\n")
                     needed = target - len(existing)
-                    batch_seed += 1
-                    time.sleep(0.5)
+                    time.sleep(RATE_LIMIT_SLEEP)  # 15 RPM 준수
                 except Exception as e:
-                    print(f"  ⚠ 호출 실패: {e}, 재시도")
-                    time.sleep(2)
+                    msg = str(e)
+                    empty_streak += 1
+                    if empty_streak >= MAX_EMPTY_STREAK:
+                        print(
+                            f"  ✗ [{cat}/{split}] 연속 {MAX_EMPTY_STREAK}회 실패 — 중단: {msg[:120]}"
+                        )
+                        break
+                    # 429 (rate limit) 시 더 길게 대기
+                    wait = 30 if "429" in msg or "RESOURCE_EXHAUSTED" in msg else 5
+                    print(
+                        f"  ⚠ 호출 실패 ({empty_streak}/{MAX_EMPTY_STREAK}): "
+                        f"{msg[:120]}, {wait}초 후 재시도"
+                    )
+                    time.sleep(wait)
                     batch_seed += 1
 
             summary[cat][split] = len(existing)
             print(f"[{cat}/{split}] 최종 {len(existing)}/{target}건 → {out_path.relative_to(ROOT)}")
 
-    summary["total_cost"] = round(total_cost, 4)
     summary["total_calls"] = total_calls
+    summary["total_prompt_tokens"] = total_in_tok
+    summary["total_completion_tokens"] = total_out_tok
     return summary
 
 
@@ -220,11 +272,12 @@ def main() -> int:
         default=list(TARGET_COUNTS.keys()),
         choices=list(TARGET_COUNTS.keys()),
     )
-    parser.add_argument("--dry-run", action="store_true", help="비용·호출 수만 계산")
+    parser.add_argument("--dry-run", action="store_true", help="호출 수·예상 시간만 계산")
     args = parser.parse_args()
 
     print(f"카테고리: {args.categories}")
-    print(f"모델: {MODEL}, batch_size: {BATCH_SIZE}, 비용 캡: ${COST_CAP_USD}")
+    print(f"모델: {MODEL} (무료 tier, 15 RPM)")
+    print(f"batch_size: {BATCH_SIZE}, 호출 간격: {RATE_LIMIT_SLEEP}초")
     print(f"출력 경로: {OUT_ROOT.relative_to(ROOT)}/\n")
 
     summary = synthesize(args.categories, dry_run=args.dry_run)
