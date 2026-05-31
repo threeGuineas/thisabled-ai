@@ -49,7 +49,11 @@ class FocalLoss(nn.Module):
             logits: shape ``(N, C)``.
             targets: shape ``(N,)`` int64.
         """
-        ce = F.cross_entropy(logits, targets, weight=self.alpha, reduction="none")
+        alpha = self.alpha
+        if alpha is not None and alpha.device != logits.device:
+            alpha = alpha.to(logits.device)
+
+        ce = F.cross_entropy(logits, targets, weight=alpha, reduction="none")
         pt = torch.exp(-ce)
         loss = (1.0 - pt) ** self.gamma * ce
         if self.reduction == "mean":
