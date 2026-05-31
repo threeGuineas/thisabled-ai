@@ -18,7 +18,7 @@ import torch
 import yaml
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, DataCollatorWithPadding
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -63,7 +63,12 @@ def extract_logits(
     model.eval()
 
     ds = RiskTextDataset(parquet_path, tokenizer, max_length)
-    dl = DataLoader(ds, batch_size=batch_size, shuffle=False)
+    dl = DataLoader(
+        ds, 
+        batch_size=batch_size, 
+        shuffle=False,
+        collate_fn=DataCollatorWithPadding(tokenizer)
+    )
 
     all_logits = []
     all_labels = []
