@@ -26,6 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+# pyrefly: ignore [missing-import]
 from src.data.synthesis_prompts import (  # noqa: E402
     CONTEXTS,
     LANGUAGE_STYLES,
@@ -36,7 +37,7 @@ from src.data.synthesis_prompts import (  # noqa: E402
 )
 
 OUT_ROOT = ROOT / "data" / "synthetic" / "emergency"
-MODEL = "gemini-2.0-flash"  # 무료 tier — 15 RPM / 1,500 RPD
+MODEL = "gemini-2.5-flash"  # 무료 tier — 2.0-flash 쿼터 소진으로 전환
 BATCH_SIZE = 20  # 한 LLM 호출당 생성 건수
 RATE_LIMIT_SLEEP = 4.5  # 15 RPM 안전 마진 (60/15 = 4초)
 MAX_OUTPUT_TOKENS = 8192  # flash 최대 — 20건 JSONL 잘림 방지
