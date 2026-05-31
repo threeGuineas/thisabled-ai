@@ -24,20 +24,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from src.evaluation.metrics import compute_classification_metrics  # noqa: E402
+from src.models.stacker import LightGBMStacker
 from src.training.dataset import RiskTextDataset  # noqa: E402
-
-DISABILITY_KEYWORDS = [
-    "장애",
-    "발달장애",
-    "시각장애",
-    "청각장애",
-    "지체장애",
-    "휠체어",
-    "정신장애",
-    "지적장애",
-    "치료사",
-    "활동지원",
-]
 
 
 def load_yaml_config(path: Path) -> dict[str, Any]:
@@ -64,10 +52,7 @@ def extract_logits(
 
     ds = RiskTextDataset(parquet_path, tokenizer, max_length)
     dl = DataLoader(
-        ds, 
-        batch_size=batch_size, 
-        shuffle=False,
-        collate_fn=DataCollatorWithPadding(tokenizer)
+        ds, batch_size=batch_size, shuffle=False, collate_fn=DataCollatorWithPadding(tokenizer)
     )
 
     all_logits = []
@@ -87,43 +72,17 @@ def extract_logits(
     return np.concatenate(all_logits, axis=0), np.concatenate(all_labels, axis=0)
 
 
-def build_meta_features(df: pd.DataFrame, logits: np.ndarray) -> tuple[pd.DataFrame, np.ndarray]:
-    """logits와 메타 피처들을 결합하여 Stacking용 Feature Matrix 및 Target 구축."""
-    meta_df = pd.DataFrame()
-
-    # 1. KcELECTRA Logits (4차원)
-    for i in range(4):
-        meta_df[f"logit_{i}"] = logits[:, i]
-
-    # 2. Source 인코딩 (Categorical)
-    # unsmile: 0, kold: 1, synthetic_emergency_v1: 2, 그 외: 3
-    source_map = {"unsmile": 0, "kold": 1, "synthetic_emergency_v1": 2}
-    meta_df["source"] = df["source"].map(source_map).fillna(3).astype("category")
-
-    # 3. 텍스트 길이 (기본 정규화 없이 사용, 나무 기반 모델이므로 무방)
-    meta_df["length"] = df["text"].str.len().fillna(0).astype(np.float32)
-
-    # 4. 장애 관련 맥락 키워드 여부 (바이너리)
-    has_disability = (
-        df["text"].apply(lambda t: any(kw in str(t) for kw in DISABILITY_KEYWORDS)).astype(np.int8)
-    )
-    meta_df["has_disability"] = has_disability
-
-    targets = df["label"].values.astype(np.int8)
-    return meta_df, targets
-
-
 def train_stacking_meta_learner(
     config_path: Path,
     model_dir: Path,
     data_dir: Path,
     out_model_path: Path,
 ) -> dict[str, Any]:
-    import lightgbm as lgb
-
     cfg = load_yaml_config(config_path)
     stack_cfg = cfg.get("stacking", {})
     lgbm_params = stack_cfg.get("lgbm_params", {})
+
+    stacker = LightGBMStacker(lgbm_params=lgbm_params)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"사용 장비: {device}")
@@ -150,66 +109,39 @@ def train_stacking_meta_learner(
             device=device,
         )
 
-        X, y = build_meta_features(df, logits)  # noqa: N806
+        X, y = stacker.build_meta_features(df, logits)  # noqa: N806
         data_features[split] = X
         data_targets[split] = y
-
-    X_train, y_train = data_features["train"], data_targets["train"]  # noqa: N806
-    X_val, y_val = data_features["val"], data_targets["val"]  # noqa: N806
-
-    print("\n=== LightGBM 메타 학습기 학습 ===")
-    print(f"Train Shape: {X_train.shape}, Val Shape: {X_val.shape}")
-
-    # LightGBM Classifier 학습
-    # multiclass 일때 class_weight='balanced'를 적용하여 불균형 해소
-    model = lgb.LGBMClassifier(
-        objective=lgbm_params.get("objective", "multiclass"),
-        num_class=lgbm_params.get("num_class", 4),
-        n_estimators=lgbm_params.get("n_estimators", 500),
-        learning_rate=lgbm_params.get("learning_rate", 0.05),
-        num_leaves=lgbm_params.get("num_leaves", 31),
-        max_depth=lgbm_params.get("max_depth", -1),
-        random_state=lgbm_params.get("random_state", 42),
-        class_weight="balanced",
+    # 2. LightGBM 모델 훈련
+    print("\n  - LightGBM Stacking 모델 훈련 시작...")
+    stacker.fit(
+        X_train=data_features["train"],
+        y_train=data_targets["train"],
+        X_val=data_features["val"],
+        y_val=data_targets["val"],
+        num_boost_round=stack_cfg.get("num_boost_round", 100),
     )
 
-    # 학습
-    model.fit(
-        X_train,
-        y_train,
-        eval_set=[(X_val, y_val)],
-        callbacks=[lgb.early_stopping(stopping_rounds=30, verbose=True)],
-    )
+    # 3. 테스트셋 평가
+    print("\n  - 테스트셋 평가 중...")
+    y_pred_probs = stacker.predict(data_features["test"])
+    y_pred = np.argmax(y_pred_probs, axis=1)
 
-    # 2. 평가 진행
-    print("\n=== 최종 Stacking 모델 평가 ===")
-    metrics_result = {}
-    for split in ["val", "test"]:
-        X_eval, y_eval = data_features[split], data_targets[split]  # noqa: N806
-        preds = model.predict(X_eval)
-        proba = model.predict_proba(X_eval)
+    metrics = compute_classification_metrics(data_targets["test"], y_pred, y_pred_probs)
+    print("\n=== 최종 Stacking 평가 메트릭 ===")
+    for k, v in metrics.items():
+        if isinstance(v, float):
+            print(f"  {k}: {v:.4f}")
+        else:
+            print(f"  {k}: \n{v}")
 
-        m = compute_classification_metrics(y_eval, preds, proba)
-        metrics_result[split] = m
-
-        print(f"\n[{split.upper()} 세트 평가 결과]")
-        print(f"  - Macro-F1: {m['macro_f1']:.4f}")
-        print(f"  - 긴급 Recall: {m['emergency_recall']:.4f}")
-        if "auc_pr" in m:
-            print(f"  - AUC-PR: {m['auc_pr']:.4f}")
-
-        for cls, stats in m["per_class"].items():
-            print(
-                f"    * Class {cls} ({stats['name']}): F1 {stats['f1']:.4f} (Recall {stats['recall']:.4f})"
-            )
-
-    # 3. 모델 저장
+    # 4. 저장
     out_model_path.parent.mkdir(parents=True, exist_ok=True)
     with out_model_path.open("wb") as f:
-        pickle.dump(model, f)
-    print(f"\n✔ Stacking 메타 모델 저장 완료: {out_model_path.relative_to(ROOT)}")
+        pickle.dump(stacker, f)
+    print(f"\n✔ Stacking 메타 러너 저장 완료: {out_model_path.relative_to(ROOT)}")
 
-    return metrics_result
+    return metrics
 
 
 def main() -> int:

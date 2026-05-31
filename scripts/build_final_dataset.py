@@ -1,8 +1,9 @@
 """통합 최종 데이터셋 빌드 (시드 데이터 + 제미나이 합성 데이터).
 
-data/processed/{train,val,test}.parquet 에 존재하는 시드 데이터와
-data/synthetic/emergency/ 하위의 합성 데이터(*.jsonl)를 split 별로 결합하여
-동일한 data/processed/ 하위에 덮어씁니다.
+[수정된 정책 - 2026-06-01]
+- Train: 시드 Train + 합성 Train 병합
+- Val / Test: 시드 데이터만 유지 (오염 방지)
+- 합성 Hold-out: 합성 Val + Test를 묶어서 별도 parquet로 분리
 """
 
 from __future__ import annotations
@@ -53,19 +54,13 @@ def load_synthetic_splits(synth_dir: Path) -> dict[str, pd.DataFrame]:
             continue
 
         df = pd.DataFrame(items)
-        # 스키마 통일화 및 가공
         df["text"] = df["text"].astype(str).str.strip()
         df["label"] = df["label"].astype(int)
-
-        # source_id 고유 식별자 생성
-        # synth_<category>_<split>_<index>
         df["source"] = df.get("source", "synthetic_emergency_v1")
         df["source_id"] = df.apply(
             lambda r, _s=split: f"synth_{r.get('subcategory', 'unknown')}_{_s}_{r.name}",
             axis=1,
         )
-
-        # 최종 스키마만 유지
         dfs[split] = df[["text", "label", "source", "source_id"]]
         print(f"  → 합성 [{split}]: {len(dfs[split])}건 로드 완료")
 
@@ -79,38 +74,37 @@ def build_final_dataset(seed: int = 42) -> None:
     print(f"1. 합성 데이터 로딩 중... ({SYNTH_DIR})")
     synth_dfs = load_synthetic_splits(SYNTH_DIR)
 
-    # 2. 각 split별 병합 및 덮어쓰기
-    for split in ["train", "val", "test"]:
-        seed_path = PROCESSED_DIR / f"{split}.parquet"
-        if not seed_path.exists():
-            print(f"❌ 시드 Parquet 파일이 없습니다: {seed_path}")
-            sys.exit(1)
-
-        # 시드 데이터 로드
-        seed_df = pd.read_parquet(seed_path)
-        synth_df = synth_dfs[split]
-
-        print(f"\n[{split}] 병합 정보:")
-        print(f"  - 시드 데이터: {len(seed_df)}건")
-        print(f"  - 합성 데이터: {len(synth_df)}건")
-
-        # 3. 결합
-        if not synth_df.empty:
-            merged_df = pd.concat([seed_df, synth_df], ignore_index=True)
+    # 2. Train 병합 (시드 + 합성)
+    train_path = PROCESSED_DIR / "train.parquet"
+    if train_path.exists():
+        seed_train = pd.read_parquet(train_path)
+        synth_train = synth_dfs["train"]
+        if not synth_train.empty:
+            merged_train = pd.concat([seed_train, synth_train], ignore_index=True)
+            merged_train = merged_train.sample(frac=1.0, random_state=seed).reset_index(drop=True)
+            save_dataset(merged_train, train_path)
+            print(
+                f"\n[train] 시드({len(seed_train)}) + 합성({len(synth_train)}) 병합 완료 -> {len(merged_train)}건"
+            )
         else:
-            merged_df = seed_df
+            print("\n[train] 합성 데이터가 없어 시드 데이터 유지")
+    else:
+        print("❌ 시드 train.parquet 파일이 없습니다.")
 
-        # 4. Shuffle (RNG 고정)
-        merged_df = merged_df.sample(frac=1.0, random_state=seed).reset_index(drop=True)
+    # 3. Val / Test 유지 (합성 데이터 섞지 않음)
+    # 이미 build_processed_dataset.py 에서 생성된 순수 시드 파일을 그대로 둠
+    print("\n[val / test] 오염 방지를 위해 시드 데이터만 유지합니다.")
 
-        # 5. 저장 (덮어쓰기)
-        save_dataset(merged_df, seed_path)
-        print(f"  → 최종 병합 성공! 총 {len(merged_df)}건 저장 완료: {seed_path.relative_to(ROOT)}")
-
-        # 6. 간단 분포 출력
-        dist = merged_df["label"].value_counts().sort_index()
-        dist_str = ", ".join(f"라벨 {lbl}: {cnt}건" for lbl, cnt in dist.items())
-        print(f"  → 분포: [{dist_str}]")
+    # 4. 합성 Hold-out 평가셋 별도 저장
+    synth_val = synth_dfs["val"]
+    synth_test = synth_dfs["test"]
+    synth_holdout = pd.concat([synth_val, synth_test], ignore_index=True)
+    if not synth_holdout.empty:
+        holdout_path = PROCESSED_DIR / "synthetic_holdout.parquet"
+        save_dataset(synth_holdout, holdout_path)
+        print(
+            f"\n[synthetic_holdout] 합성 Val+Test {len(synth_holdout)}건 분리 저장 완료 -> {holdout_path.name}"
+        )
 
     print("\n=== 최종 데이터셋 통합 빌드 완료! ===")
 
