@@ -1,0 +1,17 @@
+{
+  "groups": {
+    "UnSmile": {
+      "max_gap": 0.182
+    },
+    "KOLD": {
+      "max_gap": 0.065
+    },
+    "Disability": {
+      "max_gap": null,
+      "note": "\uce21\uc815 \ubd88\uac00 (n<30)"
+    },
+    "Source": {
+      "gap": 0.0586
+    }
+  }
+}
