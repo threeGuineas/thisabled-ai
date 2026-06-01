@@ -24,8 +24,61 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from src.evaluation.metrics import compute_classification_metrics  # noqa: E402
-from src.models.stacker import LightGBMStacker
+from src.models.stacker import DISABILITY_KEYWORDS, LightGBMStacker  # noqa: E402
 from src.training.dataset import RiskTextDataset  # noqa: E402
+
+SOURCE_MAP = {"unsmile": 0, "kold": 1}
+
+
+def _encode_source(src: str) -> int:
+    """unsmile=0, kold=1, synthetic_*=2, 그 외 3."""
+    if src in SOURCE_MAP:
+        return SOURCE_MAP[src]
+    if isinstance(src, str) and src.startswith("synthetic"):
+        return 2
+    return 3
+
+
+def build_meta_features(df: pd.DataFrame, logits: np.ndarray) -> tuple[pd.DataFrame, np.ndarray]:
+    """Stacking 메타 피처 빌드 (standalone, 단위 테스트 가능).
+
+    Returns:
+        X: ``[logit_0..3, source(category), length(float), has_disability(int8)]`` (7-dim).
+        y: shape ``(N,)`` int8 라벨 배열.
+    """
+    if logits.shape[1] != 4:
+        raise ValueError(f"Logits shape must be (N, 4), got {logits.shape}")
+    if len(df) != logits.shape[0]:
+        raise ValueError(f"df({len(df)}) and logits({logits.shape[0]}) length mismatch")
+
+    cols = {f"logit_{i}": logits[:, i] for i in range(4)}
+    cols["source"] = pd.Categorical(df["source"].map(_encode_source).astype(int))
+    cols["length"] = df["text"].astype(str).str.len().astype(float).values
+    cols["has_disability"] = (
+        df["text"]
+        .astype(str)
+        .apply(lambda t: int(any(kw in t for kw in DISABILITY_KEYWORDS)))
+        .astype(np.int8)
+        .values
+    )
+    X = pd.DataFrame(  # noqa: N806
+        cols,
+        columns=[
+            "logit_0",
+            "logit_1",
+            "logit_2",
+            "logit_3",
+            "source",
+            "length",
+            "has_disability",
+        ],
+    )
+    y = (
+        df["label"].astype(np.int8).values
+        if "label" in df.columns
+        else np.zeros(len(df), dtype=np.int8)
+    )
+    return X, y
 
 
 def load_yaml_config(path: Path) -> dict[str, Any]:
@@ -109,7 +162,7 @@ def train_stacking_meta_learner(
             device=device,
         )
 
-        X, y = stacker.build_meta_features(df, logits)  # noqa: N806
+        X, y = build_meta_features(df, logits)  # noqa: N806
         data_features[split] = X
         data_targets[split] = y
     # 2. LightGBM 모델 훈련

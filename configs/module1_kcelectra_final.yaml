@@ -1,0 +1,56 @@
+# Module ① — 최종 학습 (긴급(3) 통합)
+# EXP-1: 합성 train을 oversample하고 alpha[3]=5로 가중 → 긴급 Recall 0 → ≥0.75 목표
+#
+# 사용 흐름:
+#   1) python scripts/build_processed_dataset.py        # 시드 split 재생성
+#   2) python scripts/build_final_dataset.py --synth-repeat 8   # 합성 train×8 oversample
+#   3) python scripts/train_module1.py --config configs/module1_kcelectra_final.yaml
+#   4) 합성 hold-out (data/processed/synthetic_holdout.parquet) 으로 긴급(3) Recall 측정
+
+model:
+  name: "beomi/KcELECTRA-base-v2022"
+  num_labels: 4
+  max_length: 128
+  dropout: 0.1
+
+training:
+  batch_size: 32
+  eval_batch_size: 64
+  num_epochs: 3
+  lr: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  grad_accum_steps: 1
+  fp16: true
+  seed: 42
+
+loss:
+  type: "ce"
+  focal_gamma: 0.0
+  # [정상, 주의, 경고, 긴급] — 긴급에 강한 가중 (베이스라인은 [1,1.5,1,1])
+  # 5.0은 oversample×8과 함께 동작 — 합성 비율 후 effective 가중이 너무 커지면 시드 F1 폭락 위험
+  # 안 되면 4.0/3.0으로 낮춰 재실험
+  alpha: [1.0, 1.5, 1.0, 5.0]
+
+stacking:
+  enabled: true
+  meta_learner: "lightgbm"
+  lgbm_params:
+    objective: "multiclass"
+    num_class: 4
+    metric: "multi_logloss"
+    n_estimators: 500
+    learning_rate: 0.05
+    num_leaves: 31
+    max_depth: -1
+    random_state: 42
+
+paths:
+  checkpoint_dir: "models/checkpoints/module1_final"
+  report_dir: "reports/validation_reports/module1"
+
+labels:
+  - "정상"
+  - "주의"
+  - "경고"
+  - "긴급"
