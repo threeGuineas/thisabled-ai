@@ -1,181 +1,106 @@
-"""D4: Fairlearn 기반 공정성 평가 스크립트.
+"""모듈 ① 공정성 평가 CLI — 모델 + test → 보호집단별 F1.
 
-Test 셋에 대해 UnSmile 7집단, KOLD GRP top-7 집단, 그리고 장애 키워드 포함 여부별로
-모델의 Macro-F1 성능 격차를 계산하여 보고합니다.
+EXP-3 단계 1. src.evaluation.fairness 모듈 기반.
+
+Usage:
+    python scripts/evaluate_fairness.py --model-dir models/checkpoints/module1_final
+    python scripts/evaluate_fairness.py --model-dir models/checkpoints/module1_final \\
+        --output-json reports/validation_reports/module1/fairness_after_oversample.json
 """
 
+from __future__ import annotations
+
 import argparse
-import pickle
+import json
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import torch
-from fairlearn.metrics import MetricFrame
-from sklearn.metrics import f1_score
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+from torch.utils.data import DataLoader
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    DataCollatorWithPadding,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.models.stacker import DISABILITY_KEYWORDS, LightGBMStacker
-
-UNSMILE_GROUPS = ["여성/가족", "남성", "성소수자", "인종/국적", "연령", "지역", "종교"]
-
-
-def load_raw_data(data_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
-    raw_dir = data_dir.parent / "raw"
-    us_tr = pd.read_csv(raw_dir / "unsmile/unsmile_train_v1.0.tsv", sep="\t")
-    us_va = pd.read_csv(raw_dir / "unsmile/unsmile_valid_v1.0.tsv", sep="\t")
-    unsmile = pd.concat([us_tr, us_va], ignore_index=True)
-
-    kold = pd.read_json(raw_dir / "kold/kold_v1.json")
-    return unsmile, kold
-
-
-def compute_macro_f1(y_true, y_pred):
-    return f1_score(y_true, y_pred, average="macro", zero_division=0)
-
-
-def evaluate_fairness(
-    model_dir: Path,
-    stacker_path: Path,
-    data_dir: Path,
-) -> None:
-    print("=== [모듈 ①] Fairlearn 공정성 평가 시작 ===")
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"1. 모델 로딩 ({device})...")
-    tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
-    model = AutoModelForSequenceClassification.from_pretrained(str(model_dir)).to(device)
-    num_labels = model.config.num_labels
-    pipe = pipeline(
-        "text-classification",
-        model=model,
-        tokenizer=tokenizer,
-        device=device,
-        top_k=num_labels,
-    )
-
-    with open(stacker_path, "rb") as f:
-        stacker: LightGBMStacker = pickle.load(f)
-
-    print("2. 데이터 로딩...")
-    df_test = pd.read_parquet(data_dir / "test.parquet")
-    unsmile_raw, kold_raw = load_raw_data(data_dir)
-
-    print("3. Stacking 메타 피처 및 예측 추출...")
-    # Base Logits 추출
-    texts = df_test["text"].tolist()
-    preds = pipe(texts, batch_size=64)
-    logits = []
-    for r in preds:
-        # r is a list of dicts: [{"label": "LABEL_0", "score": ...}, ...]
-        scores = [0.0] * num_labels
-        for d in r:
-            label_str = d["label"]
-            # "LABEL_0" -> 0, "LABEL_1" -> 1, etc.
-            lbl_idx = int(label_str.split("_")[-1])
-            if lbl_idx < num_labels:
-                scores[lbl_idx] = d["score"]
-        logits.append(scores)
-    logits = np.array(logits)
-
-    X_test, y_true = stacker.build_meta_features(df_test, logits)
-    y_pred_probs = stacker.predict(X_test)
-    y_pred = np.argmax(y_pred_probs, axis=1)
-
-    print("4. 보호집단 라벨(Sensitive Attributes) 매핑...")
-    # UnSmile 매핑: source_id는 원본 DataFrame의 index(문자열화된 정수)
-    unsmile_idx = df_test[df_test["source"] == "unsmile"].index
-    unsmile_source_ids = df_test.loc[unsmile_idx, "source_id"]
-
-    # KOLD 매핑: source_id는 guid 문자열 (예: "kold-v1_01651")
-    kold_idx = df_test[df_test["source"] == "kold"].index
-    kold_source_ids = df_test.loc[kold_idx, "source_id"]
-
-    # 4.1 UnSmile 7집단
-    # 원본 unsmile_raw의 index를 문자열로 변환하여 매칭
-    unsmile_raw["_str_idx"] = unsmile_raw.index.astype(str)
-    for group in UNSMILE_GROUPS:
-        df_test[f"unsmile_{group}"] = 0
-        group_str_ids = set(unsmile_raw.loc[unsmile_raw[group] == 1, "_str_idx"])
-        mask = unsmile_source_ids.isin(group_str_ids)
-        df_test.loc[unsmile_idx[mask], f"unsmile_{group}"] = 1
-
-    # 4.2 KOLD GRP top-7
-    # 원본 kold_raw의 guid를 문자열로 변환하여 매칭
-    if "GRP" in kold_raw.columns and "guid" in kold_raw.columns:
-        kold_raw["_guid_str"] = kold_raw["guid"].astype(str)
-        top_kold_groups = kold_raw["GRP"].value_counts().head(7).index.tolist()
-        for group in top_kold_groups:
-            if not group:
-                continue
-            df_test[f"kold_{group}"] = 0
-            group_guids = set(kold_raw.loc[kold_raw["GRP"] == group, "_guid_str"])
-            mask = kold_source_ids.isin(group_guids)
-            df_test.loc[kold_idx[mask], f"kold_{group}"] = 1
-
-    # 4.3 장애 도메인
-    df_test["disability_domain"] = df_test["text"].apply(
-        lambda t: "disability"
-        if any(kw in str(t) for kw in DISABILITY_KEYWORDS)
-        else "non_disability"
-    )
-
-    print("5. 공정성(Fairlearn) 평가 지표 도출...")
-
-    def print_fairness(sensitive_col, mask_idx=None):
-        sub_y_true = y_true[mask_idx] if mask_idx is not None else y_true
-        sub_y_pred = y_pred[mask_idx] if mask_idx is not None else y_pred
-        sub_sensitive = (
-            df_test.loc[mask_idx, sensitive_col] if mask_idx is not None else df_test[sensitive_col]
-        )
-
-        mf = MetricFrame(
-            metrics=compute_macro_f1,
-            y_true=sub_y_true,
-            y_pred=sub_y_pred,
-            sensitive_features=sub_sensitive,
-        )
-        print(f"\n[공정성: {sensitive_col}]")
-        for k, v in mf.by_group.items():
-            print(f"  - {k}: {v:.4f}")
-        gap = mf.difference()
-        print(f"  => 최대 격차: {gap:.4f} (목표 ≤ 0.10)")
-        return gap
-
-    print_fairness("source")
-    print_fairness("disability_domain")
-
-    print("\n[UnSmile 보호집단별 (1: 포함, 0: 미포함)]")
-    for group in UNSMILE_GROUPS:
-        print_fairness(f"unsmile_{group}", mask_idx=unsmile_idx)
-
-    if "GRP" in kold_raw.columns:
-        print("\n[KOLD 상위 7개 보호집단별]")
-        for group in top_kold_groups:
-            if group:
-                print_fairness(f"kold_{group}", mask_idx=kold_idx)
-
-    print("\n✔ Fairlearn 평가 리포트 생성 완료.")
+from src.evaluation.fairness import run_full_fairness_evaluation  # noqa: E402
+from src.training.dataset import RiskTextDataset  # noqa: E402
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model-dir", type=str, required=True)
     parser.add_argument(
-        "--model-dir", type=str, default=str(ROOT / "models" / "checkpoints" / "module1_ce")
-    )
-    parser.add_argument(
-        "--stacker-path",
+        "--test-parquet",
         type=str,
-        default=str(ROOT / "models" / "checkpoints" / "module1_stacking.pkl"),
+        default=str(ROOT / "data/processed/test.parquet"),
     )
-    parser.add_argument("--data-dir", type=str, default=str(ROOT / "data" / "processed"))
+    parser.add_argument(
+        "--unsmile-train",
+        type=str,
+        default=str(ROOT / "data/raw/unsmile/unsmile_train_v1.0.tsv"),
+    )
+    parser.add_argument(
+        "--unsmile-valid",
+        type=str,
+        default=str(ROOT / "data/raw/unsmile/unsmile_valid_v1.0.tsv"),
+    )
+    parser.add_argument(
+        "--kold-json",
+        type=str,
+        default=str(ROOT / "data/raw/kold/kold_v1.json"),
+    )
+    parser.add_argument("--output-json", type=str, default=None)
+    parser.add_argument("--max-length", type=int, default=128)
+    parser.add_argument("--batch-size", type=int, default=64)
     args = parser.parse_args()
 
-    evaluate_fairness(Path(args.model_dir), Path(args.stacker_path), Path(args.data_dir))
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"사용 장비: {device}")
+
+    print(f"1. 모델 로딩: {args.model_dir}")
+    tok = AutoTokenizer.from_pretrained(args.model_dir)
+    model = AutoModelForSequenceClassification.from_pretrained(args.model_dir).to(device).eval()
+
+    print(f"2. Test 데이터 로딩: {args.test_parquet}")
+    test_df = pd.read_parquet(args.test_parquet).reset_index(drop=True)
+    ds = RiskTextDataset(args.test_parquet, tok, args.max_length)
+    loader = DataLoader(ds, batch_size=args.batch_size, collate_fn=DataCollatorWithPadding(tok))
+
+    print("3. 예측 추출...")
+    logits_list = []
+    with torch.no_grad():
+        for batch in loader:
+            batch.pop("labels", None)
+            batch = {k: v.to(device) for k, v in batch.items()}
+            logits_list.append(model(**batch).logits.cpu().numpy())
+    logits = np.concatenate(logits_list)
+    y_pred = logits.argmax(axis=-1)
+
+    print("4. 보호집단별 공정성 평가...")
+    result = run_full_fairness_evaluation(
+        test_df=test_df,
+        y_pred=y_pred,
+        unsmile_raw_train_path=Path(args.unsmile_train),
+        unsmile_raw_valid_path=Path(args.unsmile_valid),
+        kold_raw_path=Path(args.kold_json),
+    )
+
+    out_path = (
+        Path(args.output_json)
+        if args.output_json
+        else ROOT / "reports" / "validation_reports" / "module1" / "fairness.json"
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(result, indent=2, ensure_ascii=False))
+    print(f"\n✓ 결과 저장: {out_path.relative_to(ROOT)}")
+    print("\n=== 요약 ===")
+    print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0
 
 
