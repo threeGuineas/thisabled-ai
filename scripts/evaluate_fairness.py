@@ -98,7 +98,11 @@ def main() -> int:
     )
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(result, indent=2, ensure_ascii=False))
-    print(f"\n✓ 결과 저장: {out_path.relative_to(ROOT)}")
+    try:
+        display_path = out_path.resolve().relative_to(ROOT)
+    except ValueError:
+        display_path = out_path
+    print(f"\n✓ 결과 저장: {display_path}")
     print("\n=== 요약 ===")
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0
