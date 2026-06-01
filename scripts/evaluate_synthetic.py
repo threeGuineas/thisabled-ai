@@ -43,18 +43,21 @@ def evaluate_synthetic(
     pred_labels = [int(p["label"].split("_")[-1]) for p in preds]
     df["pred"] = pred_labels
 
+    # Subcategory 별 평가 (source_id 에서 추출)
+    # source_id 포맷: synth_{subcategory}_{split}_{idx}
+    if "source_id" in df.columns:
+        df["subcategory"] = df["source_id"].apply(
+            lambda x: x.split("_")[1] if len(x.split("_")) > 1 else "unknown"
+        )
+    else:
+        df["subcategory"] = "unknown"
+
     # 평가 수행
     # 긴급(3) 라벨 타겟
     df_emergency = df[df["label"] == 3]
     overall_recall = 0.0
     if not df_emergency.empty:
         overall_recall = (df_emergency["pred"] == 3).mean()
-
-    # Subcategory 별 평가 (source_id 에서 추출)
-    # source_id 포맷: synth_{subcategory}_{split}_{idx}
-    df["subcategory"] = df["source_id"].apply(
-        lambda x: x.split("_")[1] if len(x.split("_")) > 1 else "unknown"
-    )
 
     per_subcat = {}
     for subcat, grp in df_emergency.groupby("subcategory"):
