@@ -31,12 +31,13 @@ def evaluate_shap(
     tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
     model = AutoModelForSequenceClassification.from_pretrained(str(model_dir)).to(device)
 
+    num_labels = model.config.num_labels
     pipe = pipeline(
         "text-classification",
         model=model,
         tokenizer=tokenizer,
         device=device,
-        return_all_scores=True,
+        top_k=num_labels,
     )
 
     print(f"2. 데이터 로딩 ({parquet_path.name})...")
@@ -48,19 +49,25 @@ def evaluate_shap(
     true_labels = df_sample["label"].tolist()
 
     print("3. 예측 진행 및 오분류 탐색...")
-    preds = pipe(texts)
+    preds = pipe(texts, batch_size=64)
 
-    pred_labels = [int(max(p, key=lambda x: x["score"])["label"].split("_")[-1]) for p in preds]
+    def parse_pred(result):
+        """pipeline 결과에서 최고 점수 라벨을 추출."""
+        best = max(result, key=lambda x: x["score"])
+        return int(best["label"].split("_")[-1]), best["score"]
+
+    pred_labels = []
+    pred_confs = []
+    for p in preds:
+        lbl, conf = parse_pred(p)
+        pred_labels.append(lbl)
+        pred_confs.append(conf)
 
     errors = []
     for i, (true_y, pred_y) in enumerate(zip(true_labels, pred_labels, strict=False)):
         if true_y != pred_y:
-            # 타겟 클래스 예측 확률
-            pred_score = next(
-                p["score"] for p in preds[i] if int(p["label"].split("_")[-1]) == pred_y
-            )
             errors.append(
-                {"idx": i, "text": texts[i], "true": true_y, "pred": pred_y, "conf": pred_score}
+                {"idx": i, "text": texts[i], "true": true_y, "pred": pred_y, "conf": pred_confs[i]}
             )
 
     # 확신도(Confidence)가 높은데 틀린 Top-K 개
@@ -75,14 +82,14 @@ def evaluate_shap(
 
     # SHAP Explainer 설정 (함수가 각 클래스의 확률 배열을 반환하도록 wrapping)
     def f(x):
-        res = pipe(x)
-        # res = [[{'label':'LABEL_0', 'score':0.1}, ...], ...]
+        res = pipe(list(x), batch_size=64)
         out = []
         for r in res:
-            scores = [0.0] * 4
+            scores = [0.0] * num_labels
             for d in r:
                 lbl_idx = int(d["label"].split("_")[-1])
-                scores[lbl_idx] = d["score"]
+                if lbl_idx < num_labels:
+                    scores[lbl_idx] = d["score"]
             out.append(scores)
         return np.array(out)
 
