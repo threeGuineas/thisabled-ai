@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>ThisAbled AI 최종 발표</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/simple.min.css" id="theme">
+    <style>
+        .reveal { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; }
+        .reveal h1, .reveal h2, .reveal h3 { text-transform: none; font-weight: bold; }
+        .reveal h2 { color: #2c3e50; font-size: 1.5em; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 30px; }
+        .highlight { background-color: #f1f8ff; padding: 15px; border-left: 5px solid #0366d6; font-size: 0.8em; text-align: left; }
+        .two-col { display: flex; justify-content: space-between; align-items: center; }
+        .col { flex: 1; padding: 0 15px; }
+        .small-text { font-size: 0.7em; text-align: left; line-height: 1.4; }
+        .box { border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; margin-bottom: 15px; }
+        .red-text { color: #e74c3c; font-weight: bold; }
+        .blue-text { color: #3498db; font-weight: bold; }
+        img.border { border: 1px solid #ccc; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- 슬라이드 1: 표지 -->
+            <section>
+                <h3 style="color:#7f8c8d;">Predictive Analytics 최종 프로젝트</h3>
+                <h1 style="font-size: 2.2em; margin-top: 40px; color:#2c3e50;">ThisAbled AI</h1>
+                <p style="font-size: 1.1em; color:#34495e;">장애인 소셜 안전 및 매칭을 위한<br>한국어 NLP 예측 모델링</p>
+                <div style="margin-top: 50px; font-size: 0.8em;">
+                    <p>발표일: 2026년 6월 3일</p>
+                    <p>학번/이름: _________________</p>
+                </div>
+            </section>
+
+            <!-- 슬라이드 2: 문제 정의 및 초기 불균형 -->
+            <section>
+                <h2>1. 문제 정의 및 데이터 탐색</h2>
+                <div class="two-col">
+                    <div class="col small-text">
+                        <div class="box">
+                            <strong>목표 1. 위험 감지 (Module 1)</strong><br>
+                            그루밍, 자해 신호 등 '긴급' 상황 선제적 탐지
+                        </div>
+                        <div class="box">
+                            <strong>목표 2. 안전한 매칭 (Module 2)</strong><br>
+                            장애 유형과 관심사를 고려한 랭킹 추천
+                        </div>
+                        <p class="red-text" style="font-size: 1.1em; margin-top:30px;">🚨 극단적 데이터 불균형 문제</p>
+                        <p>시드 데이터(Smilegate UnSmile, KOLD) 분석 결과, <strong>긴급(3) 클래스가 문자 그대로 0건(0.0%)</strong>으로 완전 부재하는 현상 발견.</p>
+                        <p><small>(참고: Naive Baseline 모델-모두 정상(0)으로 예측-의 정확도는 41.9%에 불과함)</small></p>
+                    </div>
+                    <div class="col">
+                        <img src="figures/initial_imbalance.png" class="border" alt="초기 불균형">
+                    </div>
+                </div>
+            </section>
+
+            <!-- 슬라이드 3: 아키텍처 오버뷰 -->
+            <section>
+                <h2>2. 시스템 아키텍처</h2>
+                <div class="small-text">
+                    <div class="highlight" style="margin-bottom: 20px;">
+                        <strong>💡 상호작용 (System Integration)</strong><br>
+                        모듈 ①에서 '경고/긴급' 스코어가 누적된 악성 유저는, 모듈 ②의 매칭 풀(Pool)에서 추천 가중치(랭킹 Penalty)가 대폭 하향되는 방식으로 두 모듈이 결합하여 <strong>안전한 추천 루프</strong>를 형성합니다.
+                    </div>
+                    <ul style="font-size: 1.2em; line-height:1.8;">
+                        <li><strong>Module ① (안전 감시 텍스트 분류기):</strong>
+                            <ul>
+                                <li><strong>모델:</strong> KcELECTRA (한국어 구어체 특화)</li>
+                                <li><strong>기법:</strong> LLM 합성 오버샘플링 + Weighted Cross-Entropy</li>
+                            </ul>
+                        </li>
+                        <li><strong>Module ② (매칭 랭킹 추천기):</strong>
+                            <ul>
+                                <li><strong>모델:</strong> LightGBM LambdaMART (Learning to Rank)</li>
+                                <li><strong>기법:</strong> SBERT 임베딩 + User-level Disjoint Split (Leakage 원천 차단)</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 슬라이드 4: 방법론 - 불균형 처리 -->
+            <section>
+                <h2>3. 모듈 ①: 데이터 불균형 고도화 전략</h2>
+                <div class="small-text">
+                    <p style="font-size:1.2em; font-weight:bold;">왜 SMOTE를 쓰지 않았는가?</p>
+                    <div class="box">
+                        <p>SMOTE는 연속형 수치 공간의 선형 보간 기법입니다. 하지만 <strong>고차원 텍스트 임베딩 공간에서 두 벡터의 중간점은 의미 없는 노이즈</strong>가 될 우려가 큽니다.</p>
+                    </div>
+                    <p style="font-size:1.2em; font-weight:bold; margin-top:20px; color:#3498db;">솔루션: LLM 기반 문맥 맞춤형 합성 (Synthesis)</p>
+                    <ul>
+                        <li>GPT-4o를 활용해 '그루밍', '자해 신호' 등 15,000건의 유효한 문맥을 지닌 긴급 데이터 합성.</li>
+                        <li>이는 수업 Case Study 3에서 <strong>cWGAN(조건부 적대 생성 신경망)을 통해 내재적 데이터 분포를 학습하여 오버샘플링한 것과 완벽히 동일한 방법론적 발전</strong>입니다.</li>
+                        <li>(품질 검증: 템플릿 기반 구문 통제 및 Hold-out 평가 FPR 0.0 달성)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 슬라이드 5: 성능 결과 추이 -->
+            <section>
+                <h2>4. 모듈 ①: 실험 결과</h2>
+                <div class="two-col">
+                    <div class="col small-text">
+                        <p><strong>Baseline (Focal Loss)</strong><br>긴급(3) 클래스 Recall 0.0 달성 실패.</p>
+                        <p style="margin-top:20px;"><strong>최종 모델 (CE+α + 합성 데이터)</strong></p>
+                        <ul>
+                            <li>Macro-F1: <span class="blue-text">0.7643</span> 달성</li>
+                            <li>긴급(3) Recall: <span class="red-text">1.0 (100%)</span></li>
+                        </ul>
+                        <div class="box" style="margin-top:20px;">
+                            <strong>False Alarm (오경보) 분석:</strong><br>
+                            Hold-out 평가 시 정상/주의/경고를 긴급으로 오인한 비율(FPR)은 0.0이었습니다. 다만, 이는 합성 데이터의 template-circular 특성일 수 있어 야생(In-the-wild) 환경 모니터링이 필요함을 인지하고 있습니다.
+                        </div>
+                    </div>
+                    <div class="col">
+                        <img src="figures/model_progression.png" class="border" alt="성능 추이">
+                    </div>
+                </div>
+            </section>
+
+            <!-- 슬라이드 6: XAI (SHAP) -->
+            <section>
+                <h2>5. 해석 가능한 AI (SHAP) 도입 및 통찰</h2>
+                <div class="two-col">
+                    <div class="col small-text">
+                        <strong>[Local SHAP] 모듈 ① 텍스트 분류</strong>
+                        <p>단순 막대 그래프를 넘어, "전체 긴급 예측 기여도 Top-5 키워드" 분석 후 오분류 1건을 심층 해석(입체성 확보).</p>
+                        <div class="highlight">
+                            <strong>정책 제언:</strong> '비밀', '내가 다 해줄게' 등의 그루밍 토큰 기여도가 높음. <strong>복지사 대시보드에 해당 키워드 룰을 삽입해 우선 모니터링 대상으로 알림을 띄우는 설계</strong>가 필요.
+                        </div>
+                    </div>
+                    <div class="col small-text">
+                        <strong>[Global SHAP] 모듈 ② 매칭 랭킹</strong>
+                        <img src="figures/shap_module2_global.png" class="border" alt="SHAP" style="width: 100%; margin: 10px 0;">
+                        <div class="highlight">
+                            <strong>정책 제언:</strong> f_cosine(소개글 유사도)이 높을수록(빨간점) 매칭 호환성을 (+) 강하게 견인. <strong>UX적으로 유저의 상세 소개글 작성을 유도해야 함.</strong> 장애 일치 여부(f_dis_match)는 절대적이지 않아 교차 추천 가능.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 슬라이드 7: 모듈 ② Data Leakage 방지 -->
+            <section>
+                <h2>6. 모듈 ②: Data Leakage 및 과적합 제어</h2>
+                <div class="small-text">
+                    <p><strong>1. Data Leakage (데이터 누수) 원천 차단</strong></p>
+                    <ul>
+                        <li><span class="blue-text">User-level Disjoint Split:</span> Train과 Test 세트에 동일한 사용자가 등장하지 않도록 분리.</li>
+                        <li><span class="blue-text">Label Leakage 차단:</span> 매칭 정답에 직결되는 '지역 일치' 등의 변수를 의도적으로 제거(mode=embedding).</li>
+                        <li><span class="blue-text">Frozen SBERT:</span> 임베딩 추출기 Fine-tuning 제외.</li>
+                    </ul>
+
+                    <p style="margin-top:30px;"><strong>2. 고차원 임베딩의 Feature Selection</strong></p>
+                    <div class="box">
+                        <strong>Q. SBERT 고차원 벡터를 그대로 쓰면 과적합되지 않나?</strong><br>
+                        본 프로젝트는 트리의 앙상블인 LightGBM을 사용했습니다. LightGBM은 자체적인 정보 획득량(Information Gain) 기반 분기를 수행하므로 <strong>모델 내부적으로 Feature Selection이 이루어집니다</strong>. 이에 더해 L1/L2 정규화(Regularization) 파라미터를 강하게 주어 과적합을 제어했습니다.
+                    </div>
+                </div>
+            </section>
+
+            <!-- 슬라이드 8: 공정성 및 한계점 -->
+            <section>
+                <h2>7. 공정성 평가 및 한계점 극복 방향</h2>
+                <div class="small-text">
+                    <p><strong>공정성(Fairness) 평가 정직 보고</strong></p>
+                    <ul>
+                        <li>성별, 종교 등 일반 그룹 간 F1 max_gap은 0.182.</li>
+                        <li>본 플랫폼의 핵심인 <strong>'장애(Disability)' 도메인의 경우 평가 샘플이 28건에 불과</strong>하여 통계적 신뢰도가 부족함을 정직하게 보고합니다.</li>
+                    </ul>
+                    <div class="box" style="margin-top:20px;">
+                        <strong>한계의 발전적 승화 (Next Step)</strong><br>
+                        단순히 "데이터 부족"으로 끝나지 않겠습니다. 향후 플랫폼 운영 단계에서 실제 시각/청각/발달 장애인 유저의 발화 데이터를 <strong>IRB 승인 하에 익명화 수집</strong>하거나, 프라이버시 보장을 위한 <strong>연합 학습(Federated Learning)</strong>을 도입하여 공정성 지표를 재검증 및 고도화하겠습니다.
+                        <br><br>
+                        <small>*(추가 한계: 5일 제약으로 인한 K-fold 교차검증 미수행은 Stratified Split 및 단계적 3단계 비교로 보완)*</small>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 슬라이드 9: 결론 -->
+            <section>
+                <h2>8. 결론</h2>
+                <div class="small-text" style="font-size: 1.2em; line-height: 1.8;">
+                    <ol>
+                        <li><strong>데이터 불균형 극복:</strong> LLM 기반 문맥 맞춤형 합성 오버샘플링을 통해 긴급(3) 클래스의 탐지 성능을 0.0에서 1.0으로 비약적 향상.</li>
+                        <li><strong>엄격한 검증 파이프라인:</strong> Data Leakage를 원천 차단하는 User-level Split과 합성 Hold-out 평가 환경 구축.</li>
+                        <li><strong>설명 가능한 정책 도출:</strong> SHAP 분석을 단순한 그래프가 아닌, 복지사 대시보드 룰(Rule) 적용 및 UX 개선이라는 <strong>실질적 플랫폼 정책 제언</strong>으로 연결.</li>
+                    </ol>
+                    <p style="text-align: center; margin-top: 50px; font-weight: bold; font-size: 1.3em; color: #3498db;">
+                        감사합니다. Q&A
+                    </p>
+                </div>
+            </section>
+
+            <!-- 슬라이드 10: Appendix (예상 질문) -->
+            <section>
+                <h2>Appendix: 예상 Q&A Backup</h2>
+                <div class="small-text">
+                    <p><strong>Q1. 특성 선택(Feature Selection)을 별도로 하지 않은 이유?</strong></p>
+                    <p>👉 LightGBM 트리의 내장된 분기 중요도(Split gain) 연산으로 암묵적 특성 선택이 이루어집니다. 고차원 텍스트 벡터 전체의 비선형 조합이 매칭에 필요하기에, 강제 삭제(SelectFromModel 등)보다는 L1/L2 정규화로 과적합을 제어하는 것이 효과적이라고 판단했습니다.</p>
+
+                    <p><strong>Q2. 모듈 1과 모듈 2의 시스템적 통합 방안은?</strong></p>
+                    <p>👉 독립된 모듈이 아닙니다. 모듈 1에서 경고/긴급 판정을 받은 유저는 '위험도 스코어'가 누적되며, 이 스코어는 모듈 2 랭킹 모델의 '음의 가중치(Penalty)'로 작용하여 건강한 유저들의 추천 리스트에서 즉각적으로 배제되는 안전 루프를 형성합니다.</p>
+
+                    <p><strong>Q3. 데이터 극단적 불균형 전, Naive Baseline의 정확도는?</strong></p>
+                    <p>👉 긴급 0%인 42:20:38:0 분포에서 ML 없이 무조건 '정상(42%)'으로만 예측할 경우 기준 정확도는 41.9%에 불과합니다. 본 프로젝트는 이 Naive Baseline을 돌파하여 의미 있는 Macro-F1 0.76을 확보한 것입니다.</p>
+                </div>
+            </section>
+
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js"></script>
+    <script>
+        Reveal.initialize({
+            controls: true,
+            progress: true,
+            center: false,
+            hash: true,
+            slideNumber: 'c/t'
+        });
+    </script>
+</body>
+</html>
