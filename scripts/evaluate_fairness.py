@@ -49,12 +49,13 @@ def evaluate_fairness(
     print(f"1. 모델 로딩 ({device})...")
     tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
     model = AutoModelForSequenceClassification.from_pretrained(str(model_dir)).to(device)
+    num_labels = model.config.num_labels
     pipe = pipeline(
         "text-classification",
         model=model,
         tokenizer=tokenizer,
         device=device,
-        return_all_scores=True,
+        top_k=num_labels,
     )
 
     with open(stacker_path, "rb") as f:
@@ -70,12 +71,14 @@ def evaluate_fairness(
     preds = pipe(texts, batch_size=64)
     logits = []
     for r in preds:
-        scores = [0.0] * 4
+        # r is a list of dicts: [{"label": "LABEL_0", "score": ...}, ...]
+        scores = [0.0] * num_labels
         for d in r:
-            lbl_idx = int(d["label"].split("_")[-1])
-            scores[lbl_idx] = d["score"]
-        # Convert softmax scores back to pseudo-logits or just use probabilities as features
-        # Since we just need features for stacker, probabilities are fine
+            label_str = d["label"]
+            # "LABEL_0" -> 0, "LABEL_1" -> 1, etc.
+            lbl_idx = int(label_str.split("_")[-1])
+            if lbl_idx < num_labels:
+                scores[lbl_idx] = d["score"]
         logits.append(scores)
     logits = np.array(logits)
 
