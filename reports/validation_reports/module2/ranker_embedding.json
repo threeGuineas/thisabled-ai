@@ -1,5 +1,15 @@
 {
   "mode": "embedding",
-  "ndcg@5": 0.9061,
-  "ndcg@10": 0.907
+  "ndcg@5": 0.9061446726876372,
+  "ndcg@10": 0.9069506577540093,
+  "n_train_users": 800,
+  "n_test_users": 200,
+  "n_train_pairs": 2400,
+  "n_test_pairs": 593,
+  "n_features": 3,
+  "feature_names": [
+    "f_cosine",
+    "f_l2",
+    "f_dis_match"
+  ]
 }
