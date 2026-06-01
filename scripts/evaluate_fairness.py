@@ -87,30 +87,34 @@ def evaluate_fairness(
     y_pred = np.argmax(y_pred_probs, axis=1)
 
     print("4. 보호집단 라벨(Sensitive Attributes) 매핑...")
-    # UnSmile 매핑
+    # UnSmile 매핑: source_id는 원본 DataFrame의 index(문자열화된 정수)
     unsmile_idx = df_test[df_test["source"] == "unsmile"].index
-    unsmile_source_ids = df_test.loc[unsmile_idx, "source_id"].astype(int)
+    unsmile_source_ids = df_test.loc[unsmile_idx, "source_id"]
 
-    # KOLD 매핑
+    # KOLD 매핑: source_id는 guid 문자열 (예: "kold-v1_01651")
     kold_idx = df_test[df_test["source"] == "kold"].index
-    kold_source_ids = df_test.loc[kold_idx, "source_id"].astype(int)
+    kold_source_ids = df_test.loc[kold_idx, "source_id"]
 
     # 4.1 UnSmile 7집단
+    # 원본 unsmile_raw의 index를 문자열로 변환하여 매칭
+    unsmile_raw["_str_idx"] = unsmile_raw.index.astype(str)
     for group in UNSMILE_GROUPS:
         df_test[f"unsmile_{group}"] = 0
-        group_raw_idx = unsmile_raw[unsmile_raw[group] == 1].index
-        mask = unsmile_source_ids.isin(group_raw_idx)
+        group_str_ids = set(unsmile_raw.loc[unsmile_raw[group] == 1, "_str_idx"])
+        mask = unsmile_source_ids.isin(group_str_ids)
         df_test.loc[unsmile_idx[mask], f"unsmile_{group}"] = 1
 
     # 4.2 KOLD GRP top-7
-    if "GRP" in kold_raw.columns:
+    # 원본 kold_raw의 guid를 문자열로 변환하여 매칭
+    if "GRP" in kold_raw.columns and "guid" in kold_raw.columns:
+        kold_raw["_guid_str"] = kold_raw["guid"].astype(str)
         top_kold_groups = kold_raw["GRP"].value_counts().head(7).index.tolist()
         for group in top_kold_groups:
             if not group:
                 continue
             df_test[f"kold_{group}"] = 0
-            group_raw_idx = kold_raw[kold_raw["GRP"] == group].index
-            mask = kold_source_ids.isin(group_raw_idx)
+            group_guids = set(kold_raw.loc[kold_raw["GRP"] == group, "_guid_str"])
+            mask = kold_source_ids.isin(group_guids)
             df_test.loc[kold_idx[mask], f"kold_{group}"] = 1
 
     # 4.3 장애 도메인
