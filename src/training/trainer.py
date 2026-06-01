@@ -117,16 +117,27 @@ def train_module1(
         logging_steps=50,
     )
 
-    trainer = FocalLossTrainer(
-        model=model,
-        args=args,
-        train_dataset=train_ds,
-        eval_dataset=val_ds,
-        tokenizer=tokenizer,
-        data_collator=DataCollatorWithPadding(tokenizer),
-        compute_metrics=build_compute_metrics(),
-        focal_loss=focal,
-    )
+    # transformers 5.0+ 에서 `tokenizer` 인자가 `processing_class`로 변경됨.
+    # 양 버전 모두 호환: import해서 사용 가능한 키워드 동적 결정.
+    import inspect
+
+    from transformers import Trainer as _HFTrainer
+
+    trainer_kw = {
+        "model": model,
+        "args": args,
+        "train_dataset": train_ds,
+        "eval_dataset": val_ds,
+        "data_collator": DataCollatorWithPadding(tokenizer),
+        "compute_metrics": build_compute_metrics(),
+        "focal_loss": focal,
+    }
+    sig = inspect.signature(_HFTrainer.__init__)
+    if "processing_class" in sig.parameters:
+        trainer_kw["processing_class"] = tokenizer
+    else:
+        trainer_kw["tokenizer"] = tokenizer
+    trainer = FocalLossTrainer(**trainer_kw)
 
     train_result = trainer.train()
     # load_best_model_at_end=True 라 trainer.model이 best 모델임.
