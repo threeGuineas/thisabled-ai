@@ -26,6 +26,7 @@ sys.path.insert(0, str(ROOT))
 from src.evaluation.metrics import compute_classification_metrics  # noqa: E402
 from src.models.stacker import DISABILITY_KEYWORDS, LightGBMStacker  # noqa: E402
 from src.training.dataset import RiskTextDataset  # noqa: E402
+from src.utils.tracking import log_metrics, mlflow_run  # noqa: E402
 
 SOURCE_MAP = {"unsmile": 0, "kold": 1}
 
@@ -130,6 +131,7 @@ def train_stacking_meta_learner(
     model_dir: Path,
     data_dir: Path,
     out_model_path: Path,
+    oof_logits_path: Path | None = None,
 ) -> dict[str, Any]:
     cfg = load_yaml_config(config_path)
     stack_cfg = cfg.get("stacking", {})
@@ -140,20 +142,40 @@ def train_stacking_meta_learner(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"사용 장비: {device}")
 
-    # 1. Logits 추출 및 메타 피처 구축
-    splits = ["train", "val", "test"]
-    data_features = {}
-    data_targets = {}
-    original_dfs = {}
+    if oof_logits_path is None:
+        oof_logits_path = data_dir / "oof_train_logits.npy"
 
-    for split in splits:
+    # 누수 차단의 핵심: train split은 OOF logits을 써야 한다. full-train base 모델로
+    # train의 logits을 다시 뽑으면 in-fold(in-sample) 누수가 발생하므로 금지한다.
+    if not oof_logits_path.exists():
+        raise FileNotFoundError(
+            f"OOF logits이 없습니다: {oof_logits_path}\n"
+            "먼저 `python scripts/generate_oof_logits.py --config <config>` 를 실행해 "
+            "train split의 out-of-fold logits을 생성하세요 (in-fold 누수 방지)."
+        )
+
+    # 1. 메타 피처 구축
+    #    - train: OOF logits (base가 본 적 없는 fold 예측)
+    #    - val/test: full-train base 모델 logits (해당 split은 학습에 안 쓰였으므로 정상)
+    data_features: dict[str, pd.DataFrame] = {}
+    data_targets: dict[str, np.ndarray] = {}
+
+    train_df = pd.read_parquet(data_dir / "train.parquet").reset_index(drop=True)
+    oof_logits = np.load(oof_logits_path)
+    if oof_logits.shape != (len(train_df), cfg["model"].get("num_labels", 4)):
+        raise ValueError(
+            f"OOF logits shape {oof_logits.shape} 가 train({len(train_df)})와 정렬되지 않습니다. "
+            "train.parquet 재생성 후 generate_oof_logits.py 를 다시 실행하세요."
+        )
+    print(f"  - train: OOF logits 사용 ({oof_logits_path.name}, shape={oof_logits.shape})")
+    X_tr, y_tr = build_meta_features(train_df, oof_logits)  # noqa: N806
+    data_features["train"], data_targets["train"] = X_tr, y_tr
+
+    for split in ("val", "test"):
         parquet_path = data_dir / f"{split}.parquet"
         if not parquet_path.exists():
             raise FileNotFoundError(f"Parquet 파일이 없습니다: {parquet_path}")
-
         df = pd.read_parquet(parquet_path)
-        original_dfs[split] = df
-
         logits, _ = extract_logits(
             model_dir=model_dir,
             parquet_path=parquet_path,
@@ -161,32 +183,42 @@ def train_stacking_meta_learner(
             max_length=cfg["model"].get("max_length", 128),
             device=device,
         )
-
         X, y = build_meta_features(df, logits)  # noqa: N806
         data_features[split] = X
         data_targets[split] = y
-    # 2. LightGBM 모델 훈련
-    print("\n  - LightGBM Stacking 모델 훈련 시작...")
-    stacker.fit(
-        X_train=data_features["train"],
-        y_train=data_targets["train"],
-        X_val=data_features["val"],
-        y_val=data_targets["val"],
-        num_boost_round=stack_cfg.get("num_boost_round", 100),
-    )
 
-    # 3. 테스트셋 평가
-    print("\n  - 테스트셋 평가 중...")
-    y_pred_probs = stacker.predict(data_features["test"])
-    y_pred = np.argmax(y_pred_probs, axis=1)
+    # 2. LightGBM 메타러너 훈련 + 3. 테스트 평가 (MLflow run으로 기록)
+    with mlflow_run(
+        "thisabled-module1",
+        run_name=f"stacking/{config_path.stem}",
+        params={
+            "stack/base_model_dir": str(model_dir),
+            "stack/oof_logits": oof_logits_path.name,
+            "stack/num_boost_round": stack_cfg.get("num_boost_round", 100),
+            **{f"stack/lgbm_{k}": v for k, v in lgbm_params.items()},
+        },
+    ):
+        print("\n  - LightGBM Stacking 모델 훈련 시작 (train=OOF)...")
+        stacker.fit(
+            X_train=data_features["train"],
+            y_train=data_targets["train"],
+            X_val=data_features["val"],
+            y_val=data_targets["val"],
+            num_boost_round=stack_cfg.get("num_boost_round", 100),
+        )
 
-    metrics = compute_classification_metrics(data_targets["test"], y_pred, y_pred_probs)
-    print("\n=== 최종 Stacking 평가 메트릭 ===")
-    for k, v in metrics.items():
-        if isinstance(v, float):
-            print(f"  {k}: {v:.4f}")
-        else:
-            print(f"  {k}: \n{v}")
+        print("\n  - 테스트셋 평가 중...")
+        y_pred_probs = stacker.predict(data_features["test"])
+        y_pred = np.argmax(y_pred_probs, axis=1)
+
+        metrics = compute_classification_metrics(data_targets["test"], y_pred, y_pred_probs)
+        print("\n=== 최종 Stacking 평가 메트릭 ===")
+        for k, v in metrics.items():
+            if isinstance(v, float):
+                print(f"  {k}: {v:.4f}")
+            else:
+                print(f"  {k}: \n{v}")
+        log_metrics(metrics, prefix="test_")
 
     # 4. 저장
     out_model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -219,6 +251,13 @@ def main() -> int:
         type=str,
         default=str(ROOT / "models" / "checkpoints" / "module1_stacking.pkl"),
     )
+    parser.add_argument(
+        "--oof-logits",
+        type=str,
+        default=None,
+        help="train split OOF logits .npy (기본: <data-dir>/oof_train_logits.npy). "
+        "generate_oof_logits.py 로 먼저 생성해야 함.",
+    )
     args = parser.parse_args()
 
     train_stacking_meta_learner(
@@ -226,6 +265,7 @@ def main() -> int:
         model_dir=Path(args.model_dir),
         data_dir=Path(args.data_dir),
         out_model_path=Path(args.output_model),
+        oof_logits_path=Path(args.oof_logits) if args.oof_logits else None,
     )
     return 0
 

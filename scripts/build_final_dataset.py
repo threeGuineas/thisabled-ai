@@ -23,10 +23,12 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from src.data.dedup import deduplicate_against  # noqa: E402
 from src.data.loaders import save_dataset  # noqa: E402
 
 PROCESSED_DIR = ROOT / "data" / "processed"
 SYNTH_DIR = ROOT / "data" / "synthetic" / "emergency"
+DEDUP_THRESHOLD = 0.8  # MinHash Jaccard 임계값: 이 이상 유사한 합성 행은 시드와 중복 처리
 
 
 def load_synthetic_splits(synth_dir: Path) -> dict[str, pd.DataFrame]:
@@ -89,6 +91,17 @@ def build_final_dataset(seed: int = 42, synth_repeat: int = 1) -> None:
     if train_path.exists():
         seed_train = _filter_seed_only(pd.read_parquet(train_path))
         synth_train = synth_dfs["train"]
+
+        # 누수 차단: 시드 train과 근사 중복인 합성 행을 oversample 이전에 제거.
+        if not synth_train.empty and synth_repeat > 0:
+            synth_train, n_removed = deduplicate_against(
+                seed_train["text"], synth_train, threshold=DEDUP_THRESHOLD
+            )
+            print(
+                f"  → MinHash 중복 제거(threshold={DEDUP_THRESHOLD}): "
+                f"시드 train과 근사 중복 합성 {n_removed}건 제거 → 합성 {len(synth_train)}건 잔존"
+            )
+
         if not synth_train.empty and synth_repeat > 0:
             synth_train_repeated = pd.concat([synth_train] * synth_repeat, ignore_index=True)
             merged_train = pd.concat([seed_train, synth_train_repeated], ignore_index=True)
@@ -104,7 +117,7 @@ def build_final_dataset(seed: int = 42, synth_repeat: int = 1) -> None:
             print(f"  라벨 분포: {dict(dist)} (긴급 비율 {dist.get(3, 0)/total*100:.1f}%)")
         else:
             save_dataset(seed_train, train_path)  # 시드 only 저장 (idempotent)
-            print("\n[train] 합성 없음 또는 repeat=0 → 시드 데이터만 유지")
+            print("\n[train] 합성 없음/중복제거 후 0건 또는 repeat=0 → 시드 데이터만 유지")
     else:
         print("❌ 시드 train.parquet 파일이 없습니다.")
 
