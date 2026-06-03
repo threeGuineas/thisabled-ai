@@ -31,7 +31,7 @@ SKIP_DATA="${SKIP_DATA:-0}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
-step() { printf '\n\033[1;36m=== [%s/6] %s ===\033[0m\n' "$1" "$2"; }
+step() { printf '\n\033[1;36m=== [%s/7] %s ===\033[0m\n' "$1" "$2"; }
 
 echo "PYTHON=$PYTHON  CONFIG=$CONFIG  SYNTH_REPEAT=$SYNTH_REPEAT  OOF_FOLDS=$OOF_FOLDS  MODEL_DIR=$MODEL_DIR"
 "$PYTHON" -c "import torch;print('CUDA available:', torch.cuda.is_available())"
@@ -57,6 +57,11 @@ step 4 "Stacking 메타러너 학습 (train=OOF, val/test=full-train base)"
 step 5 "합성 hold-out 평가 (⚠ 합성→합성 순환 — 실데이터 일반화 아님)"
 "$PYTHON" scripts/evaluate_synthetic.py --model-dir "$MODEL_DIR"
 
-step 6 "완료 — MLflow 결과 확인"
+# 실데이터 hold-out은 커밋된 jsonl(data/eval/*.jsonl)을 그대로 사용한다.
+# build_real_holdout.py는 AI-Hub raw가 필요해 여기(Colab)서 돌리지 않는다.
+step 6 "실데이터 hold-out 평가 (AI-Hub 실긴급 + BEEP — 긴급 Recall '측정 가능', 비순환)"
+"$PYTHON" scripts/evaluate_real_holdout.py --model-dir "$MODEL_DIR"
+
+step 7 "완료 — MLflow 결과 확인"
 echo "mlruns/ 에 run 기록됨. 확인:  $PYTHON -m mlflow ui --backend-store-uri mlruns"
 echo "또는 노트북 마지막 셀에서 mlflow.search_runs()로 지표 표 출력."
