@@ -37,6 +37,16 @@ def _predict(pipe, texts: list[str]) -> list[int]:
 def evaluate_real_holdout(model_dir: Path, out_path: Path) -> dict:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"=== [모듈 ①] 실데이터 hold-out 평가 ({device}) ===")
+
+    if not (model_dir / "config.json").exists():
+        raise FileNotFoundError(
+            f"체크포인트가 없습니다: {model_dir.resolve()}\n"
+            "models/ 는 git에 포함되지 않으므로 git pull로 받아지지 않습니다(가중치는 .safetensors).\n"
+            "→ 같은 Colab 세션에서 먼저 학습(scripts/train_module1.py 또는 노트북 3-2)을 돌려 "
+            "models/checkpoints/module1_ce 를 생성한 뒤 이 평가를 실행하세요. "
+            "세션이 재시작되면 체크포인트가 사라지니 학습→평가를 한 세션에서 이어서 하세요."
+        )
+
     tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
     model = AutoModelForSequenceClassification.from_pretrained(str(model_dir)).to(device)
     pipe = pipeline("text-classification", model=model, tokenizer=tokenizer, device=device)
@@ -126,7 +136,13 @@ def main() -> int:
         default=str(ROOT / "reports" / "validation_reports" / "module1" / "real_holdout_eval.json"),
     )
     args = parser.parse_args()
-    evaluate_real_holdout(Path(args.model_dir), Path(args.out_path))
+    model_dir = Path(args.model_dir)
+    # 상대경로가 cwd 기준으로 없으면 리포지토리 루트 기준으로 재해석
+    if not model_dir.is_absolute() and not model_dir.exists():
+        alt = ROOT / model_dir
+        if alt.exists():
+            model_dir = alt
+    evaluate_real_holdout(model_dir, Path(args.out_path))
     return 0
 
 
