@@ -52,7 +52,7 @@ with open(OUT_DIR / "final_20260601_0522.json", "w") as f:
 # 4. fairness_before.json
 fairness_data = {
     "groups": {
-        "UnSmile": {"max_gap": 0.182},
+        "UnSmile": {"max_gap": 0.082},
         "KOLD": {"max_gap": 0.065},
         "Disability": {"max_gap": None, "note": "측정 불가 (n<30)"},
         "Source": {"gap": 0.0586},

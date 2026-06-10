@@ -62,6 +62,31 @@ def kold_record_to_label(rec: Mapping[str, Any]) -> int:
     return LABEL_CAUTION
 
 
+def aihub_record_to_label(rec: Mapping[str, Any]) -> int:
+    """AI-Hub 558(텍스트 윤리검증 데이터) 한 항목 → 4단계 라벨.
+
+    규칙 (Option B - 긴급 재정의):
+    1) is_immoral == False → 0 (정상)
+    2) types에 SEXUAL, CRIME, VIOLENCE 포함 & intensity >= 2.0 → 3 (긴급)
+    3) types에 HATE, DISCRIMINATION, CENSURE, ABUSE 포함 & intensity >= 2.0 → 2 (경고)
+    4) 위 조건에 안 걸린 비윤리 문장 전부 (catch-all else) → 1 (주의)
+    """
+    if not rec.get("is_immoral", False):
+        return LABEL_NORMAL
+
+    types = set(rec.get("types", []))
+    intensity = float(rec.get("intensity", 0.0))
+
+    if intensity >= 2.0:
+        if bool(types.intersection({"SEXUAL", "CRIME", "VIOLENCE"})):
+            return LABEL_EMERGENCY
+        if bool(types.intersection({"HATE", "DISCRIMINATION", "CENSURE", "ABUSE"})):
+            return LABEL_WARNING
+
+    # Catch-all fallback for any other immoral sentences (including intensity 1.x)
+    return LABEL_CAUTION
+
+
 def unsmile_dataframe_to_labels(df: pd.DataFrame) -> pd.Series:
     """UnSmile DataFrame 벡터화 매핑."""
     labels = pd.Series(LABEL_NORMAL, index=df.index, dtype=np.int8)
