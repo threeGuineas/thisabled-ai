@@ -28,6 +28,8 @@ from src.data.loaders import save_dataset  # noqa: E402
 
 PROCESSED_DIR = ROOT / "data" / "processed"
 SYNTH_DIR = ROOT / "data" / "synthetic" / "emergency"
+EVAL_DIR = ROOT / "data" / "eval"
+AIHUB_TRAIN_JSONL = EVAL_DIR / "aihub_train.jsonl"  # D-2 보완(B): 실데이터 train 투입분
 DEDUP_THRESHOLD = 0.8  # MinHash Jaccard 임계값: 이 이상 유사한 합성 행은 시드와 중복 처리
 
 
@@ -75,25 +77,39 @@ def load_synthetic_splits(synth_dir: Path) -> dict[str, pd.DataFrame]:
 
 
 def _filter_seed_only(df: pd.DataFrame) -> pd.DataFrame:
-    """idempotent를 위해 기존 합성 row를 제거하고 시드만 반환."""
-    return df[~df["source"].str.startswith("synthetic_", na=False)].reset_index(drop=True)
+    """idempotent를 위해 기존 주입(합성·AI-Hub실데이터) row를 제거하고 시드만 반환."""
+    src = df["source"].astype(str)
+    injected = src.str.startswith("synthetic_") | src.str.startswith("aihub_real")
+    return df[~injected].reset_index(drop=True)
 
 
-def build_final_dataset(seed: int = 42, synth_repeat: int = 1) -> None:
-    print(f"=== 통합 최종 데이터셋 빌드 (synth_repeat={synth_repeat}) ===")
+def _load_aihub_train() -> pd.DataFrame:
+    cols = ["text", "label", "source", "source_id"]
+    if not AIHUB_TRAIN_JSONL.exists():
+        return pd.DataFrame(columns=cols)
+    df = pd.read_json(AIHUB_TRAIN_JSONL, lines=True)
+    return df[cols]
+
+
+def build_final_dataset(seed: int = 42, synth_repeat: int = 1, include_aihub: bool = False) -> None:
+    print(
+        f"=== 통합 최종 데이터셋 빌드 (synth_repeat={synth_repeat}, include_aihub={include_aihub}) ==="
+    )
 
     # 1. 합성 데이터 로드
     print(f"1. 합성 데이터 로딩 중... ({SYNTH_DIR})")
     synth_dfs = load_synthetic_splits(SYNTH_DIR)
 
-    # 2. Train 병합 (시드 + 합성 × N)
+    # 2. Train 병합 (시드 + 합성×N + (선택)AI-Hub 실데이터)
     train_path = PROCESSED_DIR / "train.parquet"
     if train_path.exists():
         seed_train = _filter_seed_only(pd.read_parquet(train_path))
-        synth_train = synth_dfs["train"]
+        parts = [seed_train]
+        desc = [f"시드({len(seed_train)})"]
 
-        # 누수 차단: 시드 train과 근사 중복인 합성 행을 oversample 이전에 제거.
+        synth_train = synth_dfs["train"]
         if not synth_train.empty and synth_repeat > 0:
+            # 누수 차단: 시드 train과 근사 중복인 합성 행을 oversample 이전에 제거.
             synth_train, n_removed = deduplicate_against(
                 seed_train["text"], synth_train, threshold=DEDUP_THRESHOLD
             )
@@ -101,23 +117,32 @@ def build_final_dataset(seed: int = 42, synth_repeat: int = 1) -> None:
                 f"  → MinHash 중복 제거(threshold={DEDUP_THRESHOLD}): "
                 f"시드 train과 근사 중복 합성 {n_removed}건 제거 → 합성 {len(synth_train)}건 잔존"
             )
+            if not synth_train.empty:
+                synth_rep = pd.concat([synth_train] * synth_repeat, ignore_index=True)
+                parts.append(synth_rep)
+                desc.append(f"합성({len(synth_train)}×{synth_repeat}={len(synth_rep)})")
 
-        if not synth_train.empty and synth_repeat > 0:
-            synth_train_repeated = pd.concat([synth_train] * synth_repeat, ignore_index=True)
-            merged_train = pd.concat([seed_train, synth_train_repeated], ignore_index=True)
-            merged_train = merged_train.sample(frac=1.0, random_state=seed).reset_index(drop=True)
-            save_dataset(merged_train, train_path)
-            print(
-                f"\n[train] 시드({len(seed_train)}) + 합성({len(synth_train)}×{synth_repeat}={len(synth_train_repeated)}) "
-                f"병합 -> {len(merged_train)}건"
-            )
-            # 라벨 분포 출력 (긴급 비율 확인용)
-            dist = merged_train["label"].value_counts().sort_index()
-            total = len(merged_train)
-            print(f"  라벨 분포: {dict(dist)} (긴급 비율 {dist.get(3, 0)/total*100:.1f}%)")
-        else:
-            save_dataset(seed_train, train_path)  # 시드 only 저장 (idempotent)
-            print("\n[train] 합성 없음/중복제거 후 0건 또는 repeat=0 → 시드 데이터만 유지")
+        if include_aihub:
+            aihub_train = _load_aihub_train()
+            if aihub_train.empty:
+                print(f"  ⚠ {AIHUB_TRAIN_JSONL.name} 없음 → AI-Hub 투입 생략")
+            else:
+                aihub_train, n_dup = deduplicate_against(
+                    seed_train["text"], aihub_train, threshold=DEDUP_THRESHOLD
+                )
+                parts.append(aihub_train)
+                desc.append(f"AI-Hub실({len(aihub_train)}, 시드중복 {n_dup}제거)")
+
+        merged_train = (
+            pd.concat(parts, ignore_index=True)
+            .sample(frac=1.0, random_state=seed)
+            .reset_index(drop=True)
+        )
+        save_dataset(merged_train, train_path)
+        dist = merged_train["label"].value_counts().sort_index()
+        total = len(merged_train)
+        print(f"\n[train] {' + '.join(desc)} 병합 -> {total}건")
+        print(f"  라벨 분포: {dict(dist)} (긴급 비율 {dist.get(3, 0)/total*100:.1f}%)")
     else:
         print("❌ 시드 train.parquet 파일이 없습니다.")
 
@@ -148,6 +173,13 @@ if __name__ == "__main__":
         default=1,
         help="합성 train을 N회 반복 oversample (EXP-1: 8 권장). 0이면 합성 미포함",
     )
+    parser.add_argument(
+        "--include-aihub-train",
+        action="store_true",
+        help="D-2 보완(B): data/eval/aihub_train.jsonl(실데이터, hold-out 배제분)을 train에 투입",
+    )
     args = parser.parse_args()
 
-    build_final_dataset(seed=args.seed, synth_repeat=args.synth_repeat)
+    build_final_dataset(
+        seed=args.seed, synth_repeat=args.synth_repeat, include_aihub=args.include_aihub_train
+    )
