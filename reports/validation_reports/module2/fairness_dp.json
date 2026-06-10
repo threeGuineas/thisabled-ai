@@ -1,0 +1,17 @@
+{
+  "k": 10,
+  "n_queries": 100,
+  "n_pairs": 1999,
+  "selection_rate_by_disability": {
+    "발달장애": 0.5457,
+    "비장애": 0.5212,
+    "시각장애": 0.5027,
+    "지체장애": 0.4715,
+    "청각장애": 0.4649
+  },
+  "demographic_parity_difference": 0.0808,
+  "same_disability_topk_rate": 0.5013,
+  "diff_disability_topk_rate": 0.5,
+  "gate_dp_le_0.10": true,
+  "note": "mock 프로필 기반 — 실 사용자 데이터 없음(합성 타당성)."
+}
