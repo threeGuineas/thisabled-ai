@@ -1,0 +1,28 @@
+{
+  "model_dir": "models/checkpoints/module1_ce",
+  "_note": "D-2/B 최종 런(2026-06-10, Colab). train=시드+합성×8+AI-Hub실(hold-out conv 배제). 비순환 실데이터 평가.",
+  "aihub": {
+    "n": 3991,
+    "macro_f1": 0.5613657413860289,
+    "emergency_recall": 0.854763491005996,
+    "emergency_support": 1501,
+    "per_class": {
+      "0": {"precision": 0.8734567901234568, "recall": 0.7674576271186441, "f1": 0.8170335618910141, "support": 1475},
+      "1": {"precision": 0.4713983050847458, "recall": 0.5348557692307693, "f1": 0.5011261261261262, "support": 832},
+      "2": {"precision": 0.16161616161616163, "recall": 0.08743169398907104, "f1": 0.11347517730496454, "support": 183},
+      "3": {"precision": 0.7766343825665859, "recall": 0.854763491005996, "f1": 0.8138281002220108, "support": 1501}
+    }
+  },
+  "beep": {
+    "n": 1500,
+    "macro_f1": 0.40842283934778567,
+    "per_class": {
+      "0": {"precision": 0.7061923583662714, "recall": 0.8440944881889764, "f1": 0.7690100430416069, "support": 635},
+      "1": {"precision": 0.4511784511784512, "recall": 0.5458248472505092, "f1": 0.49400921658986174, "support": 491},
+      "2": {"precision": 0.7777777777777778, "recall": 0.24331550802139038, "f1": 0.37067209775967414, "support": 374},
+      "3": {"precision": 0.0, "recall": 0.0, "f1": 0.0, "support": 0}
+    }
+  },
+  "emergency_recall_gap_synth_minus_real": 0.14523650899400398,
+  "emergency_recall_synthetic_only_baseline": 0.004663557628247834
+}

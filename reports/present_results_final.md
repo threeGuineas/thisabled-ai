@@ -48,6 +48,10 @@
 
 → **합성-only 모델은 실긴급을 사실상 못 잡았고(0.5%), 실데이터 투입이 이를 0.855로 끌어올렸다.** 합성 과적합이 실데이터 보강으로 해소됨을 정량적으로 입증.
 
+![긴급 Recall 합성↔실데이터](figures/module1_emergency_recall_synth_vs_real.png)
+
+> 합성 hold-out(순환 평가)의 1.00은 "거짓 성공"이다. 같은 모델이 비순환 실데이터에선 0.005에 그쳤고(합성-only 학습), 실데이터를 train에 넣자 0.855로 게이트(0.80)를 넘었다.
+
 ### 3.2 모듈① 클래스별 (실데이터 hold-out, 최종 모델)
 
 | 클래스 | Precision | Recall | F1 | Support |
@@ -58,6 +62,8 @@
 | 3 긴급 | 0.777 | **0.855** | 0.814 | 1,501 |
 
 → 긴급·정상은 강함(F1 0.81+). **Macro-F1을 끌어내리는 병목은 경고(2) F1 0.11**(AI-Hub에 희소: 전체 21k, train 투입 650건)과 주의(1) 0.50.
+
+![실데이터 클래스별 F1](figures/module1_real_holdout_per_class_f1.png)
 
 ### 3.3 모듈① Stacking
 OOF 누수 제거 후 LightGBM Stacking은 base 단일 모델 대비 **향상 ≈0**(이전 run에서 4-class macro Δ≈−0.0004). → `project_facts` 백업 규칙에 따라 **복잡한 Stacking 대신 단일 모델 채택**이 합리적. (단 본 실데이터 모델에서의 stacking 재평가는 미수행 — 한계로 명시.)
