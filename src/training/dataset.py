@@ -13,16 +13,23 @@ from transformers import PreTrainedTokenizerBase
 class RiskTextDataset(Dataset):
     """4단계 위험도 분류용 텍스트 Dataset.
 
-    parquet 컬럼: ``text``, ``label``, ``source``, ``source_id``.
+    컬럼: ``text``, ``label``, ``source``, ``source_id``.
+
+    ``source``는 parquet 경로(``str``/``Path``) 또는 이미 로드된 ``DataFrame``을
+    받는다. 후자는 OOF 교차검증에서 train fold/val fold 같은 부분집합을 임시 파일
+    없이 바로 감싸기 위함이다.
     """
 
     def __init__(
         self,
-        parquet_path: str | Path,
+        source: str | Path | pd.DataFrame,
         tokenizer: PreTrainedTokenizerBase,
         max_length: int = 128,
     ) -> None:
-        self.df = pd.read_parquet(parquet_path).reset_index(drop=True)
+        if isinstance(source, pd.DataFrame):
+            self.df = source.reset_index(drop=True)
+        else:
+            self.df = pd.read_parquet(source).reset_index(drop=True)
         self.tokenizer = tokenizer
         self.max_length = max_length
 

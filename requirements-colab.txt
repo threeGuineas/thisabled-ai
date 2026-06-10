@@ -5,6 +5,8 @@ optuna==4.1.0
 shap==0.46.0
 fairlearn==0.11.0
 wandb==0.18.7
+mlflow==2.18.0        # 모든 run 자동 로깅 (project_facts 재현성 규약)
+datasketch==1.6.5     # MinHash LSH 시드↔합성 중복 제거 (누수 차단)
 koreanize-matplotlib==0.1.1
 kiwipiepy==0.20.1
 tenacity==9.0.0

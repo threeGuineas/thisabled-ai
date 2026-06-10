@@ -16,6 +16,8 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipe
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from src.utils.tracking import log_metrics, mlflow_run  # noqa: E402
+
 
 def evaluate_synthetic(
     model_dir: Path,
@@ -86,6 +88,23 @@ def evaluate_synthetic(
     print(f"  - 총 샘플 수: {len(df)}")
     print(f"  - 긴급(3) Recall: {overall_recall:.4f}")
     print(f"  - Boundary FPR: {fpr:.4f}")
+    print(
+        "  ⚠ 주의: 이 Recall은 합성 hold-out 기준입니다. 합성으로 학습 후 같은 분포의 합성으로 "
+        "평가하는 순환 구조이므로 실데이터 긴급 일반화를 보장하지 않습니다."
+    )
+
+    with mlflow_run(
+        "thisabled-module1",
+        run_name=f"synthetic-holdout-eval/{model_dir.name}",
+        params={"eval/model_dir": str(model_dir), "eval/data": data_path.name},
+    ):
+        log_metrics(
+            {
+                "holdout_emergency_recall": overall_recall,
+                "holdout_boundary_fpr": fpr,
+                "n_total": len(df),
+            }
+        )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
