@@ -9,7 +9,7 @@ import shap
 plt.rc("font", family="AppleGothic")
 plt.rcParams["axes.unicode_minus"] = False
 
-ROOT = Path("~/thisabled-ai")
+ROOT = Path(__file__).resolve().parents[1]
 MODEL_PATH = ROOT / "models" / "checkpoints" / "module2_lambdamart_embedding.pkl"
 FIG_PATH = ROOT / "reports" / "figures" / "shap_module2_global.png"
 

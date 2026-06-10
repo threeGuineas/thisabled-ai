@@ -58,7 +58,7 @@ def test_dataset_yields_expected_keys(tmp_path):
 
 
 def test_processed_parquet_exists_and_has_schema():
-    """build_processed_dataset.py 가 이미 실행된 상태여야 D2 학습이 바로 가능."""
+    """build_processed_dataset.py 가 이미 실행된 상태여야 학습이 바로 가능."""
     processed = ROOT / "data" / "processed"
     for split in ("train", "val", "test"):
         p = processed / f"{split}.parquet"

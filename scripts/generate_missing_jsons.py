@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-ROOT = Path("~/thisabled-ai")
+ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "reports" / "validation_reports" / "module1"
 OUT_DIR2 = ROOT / "reports" / "validation_reports" / "module2"
 OUT_DIR.mkdir(parents=True, exist_ok=True)

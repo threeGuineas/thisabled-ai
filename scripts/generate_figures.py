@@ -8,7 +8,7 @@ import seaborn as sns
 plt.rc("font", family="AppleGothic")
 plt.rcParams["axes.unicode_minus"] = False
 
-ROOT = Path("~/thisabled-ai")
+ROOT = Path(__file__).resolve().parents[1]
 FIG_DIR = ROOT / "reports" / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 

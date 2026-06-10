@@ -69,7 +69,15 @@ dist/
 build/
 *.egg-info/
 
-# D-3: 합성 긴급 데이터만 예외 추적 (raw 실데이터는 git 밖 유지)
+# 합성 긴급 데이터만 예외 추적 (raw 실데이터는 git 밖 유지)
 !data/synthetic/
 !data/synthetic/emergency/
 !data/synthetic/emergency/**
+
+# === 실데이터 평가셋 (AI-Hub/BEEP — 라이선스상 재배포 금지, 로컬 전용) ===
+data/eval/*.jsonl
+
+# === 보고서 산출물 (로컬 보관, 원격 미게시) ===
+reports/**
+!reports/*/
+!reports/*/.gitkeep

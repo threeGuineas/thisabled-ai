@@ -96,19 +96,17 @@ thisabled-ai/
 
 기획된 7주(Week 8~14) 일정을 성공적으로 완수하였습니다.
 
-| 일자 | 달성 항목 |
+| 단계 | 달성 항목 |
 |---|---|
-| **D1** | 환경 셋업, 데이터 파이프라인 (UnSmile+KOLD) 라벨 매핑 |
-| **D2** | 모듈 ① KcELECTRA 베이스라인 학습, 합성 데이터 정책 수립 |
-| **D3** | 모듈 ① Stacking 메타 학습기, 합성 데이터 Train 병합, 모듈 ② 시작 |
-| **D4** | 모듈 ② LambdaMART 학습, SHAP XAI, Fairlearn 공정성 평가 스크립트 |
-| **D5** | 최종 리포팅 (README.md, final.md), 결과물 산출 |
+| **1** | 환경 셋업, 데이터 파이프라인 (UnSmile+KOLD) 라벨 매핑 |
+| **2** | 모듈 ① KcELECTRA 베이스라인 학습, 합성 데이터 정책 수립 |
+| **3** | 모듈 ① Stacking 메타 학습기, 합성 데이터 Train 병합, 모듈 ② 시작 |
+| **4** | 모듈 ② LambdaMART 학습, SHAP XAI, Fairlearn 공정성 평가 스크립트 |
+| **5** | 최종 리포팅 (README.md, final.md), 결과물 산출 |
 
 ---
 
 ## 🏆 최종 성과 요약 (실측치)
-
-자세한 내용·한계는 [reports/final.md](reports/final.md)를 참고하세요.
 
 | 항목 | 1차 목표 | Stretch | **실측** | 평가 |
 |:---|:---:|:---:|:---:|:---:|

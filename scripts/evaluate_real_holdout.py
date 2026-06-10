@@ -1,6 +1,6 @@
-"""D-2: 비순환 실데이터 hold-out 평가 (긴급 Recall '측정 가능').
+"""비순환 실데이터 hold-out 평가 (긴급 Recall '측정 가능').
 
-`scripts/build_real_holdout.py`가 만든 커밋된 jsonl을 사용:
+`scripts/build_real_holdout.py`가 만든 로컬 jsonl을 사용(라이선스상 저장소에는 커밋하지 않음):
 - `data/eval/aihub_real_holdout.jsonl` — AI-Hub 실긴급 포함 4-class → **긴급 Recall + 4-class Macro-F1**
 - `data/eval/beep_real_holdout.jsonl` — BEEP 0/1/2 → 비긴급 도메인 일반화
 

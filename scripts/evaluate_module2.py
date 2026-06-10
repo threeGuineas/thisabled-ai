@@ -1,4 +1,4 @@
-"""D4: 모듈 ② LambdaMART 최종 성능(NDCG@K) 평가 스크립트."""
+"""모듈 ② LambdaMART 최종 성능(NDCG@K) 평가 스크립트."""
 
 import argparse
 import pickle

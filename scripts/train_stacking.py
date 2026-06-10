@@ -1,4 +1,4 @@
-"""D3: LightGBM Stacking 메타 학습기 훈련.
+"""LightGBM Stacking 메타 학습기 훈련.
 
 KcELECTRA base 모델의 logits + 메타 피처(source, length, 장애 키워드)를 입력받아
 최종 4단계 위험도 분류를 수행하는 LightGBM Stacking 메타 모델을 훈련합니다.

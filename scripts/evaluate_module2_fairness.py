@@ -1,4 +1,4 @@
-"""D-2 공정성: 모듈② 매칭의 Demographic Parity(장애유형별) 측정.
+"""모듈② 매칭의 Demographic Parity(장애유형별) 측정.
 
 project_facts 게이트: 모듈② Demographic Parity diff ≤ 0.10.
 

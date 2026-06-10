@@ -1,4 +1,4 @@
-"""D-2 보고서용 도표 생성: 합성↔실데이터 긴급 Recall, 실데이터 클래스별 F1.
+"""실데이터 hold-out 도표 생성: 합성↔실데이터 긴급 Recall, 실데이터 클래스별 F1.
 
 `reports/validation_reports/module1/real_holdout_eval.json`의 수치를 읽어 그린다.
 혼동행렬은 per-cell 예측이 export되지 않아(집계 지표만) 생략 — 대신 클래스별 F1로 대체.

@@ -1,6 +1,6 @@
 # 모듈 ① 재현·누수차단 파이프라인 실행 순서
 
-D-3(누수·재현성 인프라) 적용 후의 올바른 실행 순서. GPU 단계는 Colab A100 권장.
+누수·재현성 인프라 적용 후의 올바른 실행 순서. GPU 단계는 Colab A100 권장.
 
 ## 1. 데이터 빌드 (시드 + 합성, MinHash 중복 제거 포함)
 
@@ -52,9 +52,9 @@ python scripts/evaluate_synthetic.py --model-dir models/checkpoints/module1_ce
 ```
 
 - **주의(코드/로그에 명시됨):** 합성 hold-out 긴급 Recall은 합성→합성 순환 평가다. 실데이터
-  긴급 일반화를 보장하지 않는다. 긴급 클래스가 포함된 실데이터 hold-out 구성은 D-2(별도 작업).
+  긴급 일반화를 보장하지 않는다. 긴급 클래스가 포함된 실데이터 hold-out 구성은 별도 작업.
 
-## 지표 채점 규약 (D-1)
+## 지표 채점 규약
 
 - [src/evaluation/metrics.py](../src/evaluation/metrics.py)의 macro-F1·per_class는 항상 `[0,1,2,3]`
   4개 라벨로 채점한다. 긴급(3)이 평가셋에 0건이면 macro-F1에 0으로 반영되고 `RuntimeWarning`을

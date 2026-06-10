@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 모듈 ① 전체 파이프라인 (D-3 누수차단·재현성 반영) — 정석 실행 순서.
+# 모듈 ① 전체 파이프라인 (누수차단·재현성 반영) — 정석 실행 순서.
 #
 # docs/reproducibility_pipeline.md 와 1:1 대응. fail-fast(set -euo pipefail)이며
 # 각 단계는 멱등(재실행 안전)하도록 설계된 하위 스크립트를 호출한다.

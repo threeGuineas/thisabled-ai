@@ -1,4 +1,4 @@
-"""D-2 보완(B): AI-Hub 실데이터 학습셋 추출 (hold-out conv 완전 배제).
+"""AI-Hub 실데이터 학습셋 추출 (hold-out conv 완전 배제).
 
 배경: 합성-only 긴급 학습이 실긴급에 전이되지 않음(real-holdout 긴급 Recall 0.005,
 합성↔실 갭 0.995). 보완책으로 hold-out에 쓰이지 않은 AI-Hub conv에서 4-class 학습셋을

@@ -1,4 +1,4 @@
-"""D4: 합성 데이터 (긴급 클래스) Hold-out 별도 평가 스크립트.
+"""합성 데이터 (긴급 클래스) Hold-out 별도 평가 스크립트.
 
 Train에 섞이지 않고 분리된 synthetic_holdout.parquet 데이터를 평가하여
 긴급(3) 클래스의 Recall 및 Boundary 케이스의 오분류(FPR)를 계산합니다.

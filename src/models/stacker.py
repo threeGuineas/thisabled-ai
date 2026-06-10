@@ -8,7 +8,7 @@ import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
-# D3 피드백 반영: 장애 키워드 명시
+# 장애 키워드 명시
 DISABILITY_KEYWORDS = [
     "장애",
     "장애인",
@@ -58,7 +58,7 @@ class LightGBMStacker:
         source_map = {"unsmile": 0, "kold": 1, "synthetic_emergency_v1": 2}
         meta_df["source"] = df["source"].map(source_map).fillna(3).astype("category")
 
-        # 3. 텍스트 길이 그룹화 (Length bucket) - D3 피드백 수용
+        # 3. 텍스트 길이 그룹화 (Length bucket)
         lens = df["text"].str.len().fillna(0)
         # short: < 20, med: 20-50, long: > 50
         length_bucket = pd.cut(lens, bins=[-1, 20, 50, float("inf")], labels=[0, 1, 2])

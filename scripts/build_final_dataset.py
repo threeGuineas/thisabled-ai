@@ -29,7 +29,7 @@ from src.data.loaders import save_dataset  # noqa: E402
 PROCESSED_DIR = ROOT / "data" / "processed"
 SYNTH_DIR = ROOT / "data" / "synthetic" / "emergency"
 EVAL_DIR = ROOT / "data" / "eval"
-AIHUB_TRAIN_JSONL = EVAL_DIR / "aihub_train.jsonl"  # D-2 보완(B): 실데이터 train 투입분
+AIHUB_TRAIN_JSONL = EVAL_DIR / "aihub_train.jsonl"  # 실데이터 train 투입분
 DEDUP_THRESHOLD = 0.8  # MinHash Jaccard 임계값: 이 이상 유사한 합성 행은 시드와 중복 처리
 
 
@@ -176,7 +176,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--include-aihub-train",
         action="store_true",
-        help="D-2 보완(B): data/eval/aihub_train.jsonl(실데이터, hold-out 배제분)을 train에 투입",
+        help="data/eval/aihub_train.jsonl(실데이터, hold-out 배제분)을 train에 투입",
     )
     args = parser.parse_args()
 

@@ -1,4 +1,4 @@
-"""D-2: 비순환 실데이터 hold-out 평가셋 빌드.
+"""비순환 실데이터 hold-out 평가셋 빌드.
 
 문제: 지금까지 긴급(3) 평가가 '합성으로 학습 → 같은 분포 합성으로 평가'하는 순환 구조라
 일반화를 보장하지 못했다. 또 시드 val/test(UnSmile+KOLD)에는 긴급이 0건이라 긴급 Recall이
@@ -181,7 +181,7 @@ def main() -> int:
     parser.add_argument("--skip-beep", action="store_true", help="오프라인이면 BEEP 다운로드 생략")
     args = parser.parse_args()
 
-    print("=== D-2 실데이터 hold-out 빌드 ===")
+    print("=== 실데이터 hold-out 빌드 ===")
     synth_texts = load_synthetic_emergency_texts(SYNTH_DIR)
     print(f"합성 dedup 기준 텍스트 {len(synth_texts)}건 로드")
 
