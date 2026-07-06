@@ -21,26 +21,60 @@ python -m uvicorn serving.match_server.app:app --port 9002 &
 python serving/smoke_test.py    # /health 폴링 후 계약·지연 검증
 ```
 
+## 모델 배포 (Hugging Face Hub — private)
+
+모델 최종본은 HF private repo에서 로드한다. 이미지에 모델을 굽지 않으므로
+**빌드하는 머신에 체크포인트 파일이 없어도 된다.**
+
+```bash
+# 최초 1회 업로드 (모델 소유자 = AI 파트)
+hf auth login   # write 토큰
+hf upload soyuncj/thisabled-safety-kcelectra models/checkpoints/module1_ce . \
+  --repo-type model --private \
+  --exclude "optimizer.pt" --exclude "rng_state.pth" --exclude "scheduler.pt" --exclude "training_args.bin"
+hf upload soyuncj/thisabled-match-lambdamart models/checkpoints/module2_lambdamart_embedding.pkl \
+  --repo-type model --private
+```
+
+- BE에게는 두 repo만 읽을 수 있는 **fine-grained read 토큰**을 발급해 전달 (write 토큰 공유 금지).
+- 로컬 개발 시에는 `models/checkpoints/` 경로가 있으면 그대로 사용 (HF 불필요).
+
 ## 백엔드 compose 교체
 
-`thisabled-backend/docker-compose.yml`의 두 서비스만 수정 (AI 저장소를 백엔드 옆에 clone해둔 기준):
+`thisabled-backend/docker-compose.yml`의 두 서비스만 수정 (AI 저장소를 백엔드 옆에 clone해둔 기준 —
+체크포인트는 clone에 없어도 됨):
 
 ```yaml
   safety-model:
     build:
       context: ../thisabled-ai
       dockerfile: serving/safety_server/Dockerfile
+    environment:
+      SAFE_MODEL_DIR: soyuncj/thisabled-safety-kcelectra
+      HF_TOKEN: ${HF_TOKEN}
+    volumes:
+      - hf_cache_safety:/srv/hf-cache
     restart: unless-stopped
 
   match-model:
     build:
       context: ../thisabled-ai
       dockerfile: serving/match_server/Dockerfile
+    environment:
+      MATCH_HF_REPO: soyuncj/thisabled-match-lambdamart
+      HF_TOKEN: ${HF_TOKEN}
+    volumes:
+      - hf_cache_match:/srv/hf-cache
     restart: unless-stopped
+
+# volumes: 에 hf_cache_safety, hf_cache_match 추가
 ```
+
+백엔드 `.env`에 `HF_TOKEN=<read 토큰>` 추가 후:
 
 ```bash
 docker compose up -d --build safety-model match-model
+docker compose logs -f safety-model      # 첫 기동 시 모델 다운로드(~500MB) 후 startup complete
 docker compose exec -T app pytest -q     # 백엔드 테스트 그린 확인
 ```
 
@@ -57,6 +91,11 @@ docker compose exec -T app pytest -q     # 백엔드 테스트 그린 확인
 | `SAFE_MAX_LENGTH` | 128 | 토크나이저 max_length |
 | `TORCH_NUM_THREADS` | 2 | CPU 스레드 |
 | `MATCH_COSINE_REASON_MIN` | 0.5 | "소개 내용이 비슷해요" 사유 최소 코사인 |
+| `MATCH_W_MODEL` / `MATCH_W_TAG` / `MATCH_W_AGE` | 0.5 / 0.3 / 0.2 | 점수 블렌드 가중치 (모델·태그 교집합·연령대 일치) |
+| `SAFE_MODEL_DIR` | 로컬 경로 | 로컬 체크포인트 경로 또는 HF repo id |
+| `MATCH_HF_REPO` | (없음) | 로컬 pkl 부재 시 다운로드할 HF repo id |
+| `HF_TOKEN` | (없음) | HF private repo read 토큰 |
+| `MATCH_W_MODEL` / `MATCH_W_TAG` / `MATCH_W_AGE` | 0.5 / 0.3 / 0.2 | 점수 블렌드 가중치 (모델·태그 교집합·연령대 일치) |
 
 ## 설계 메모 (보고서 반영)
 
@@ -70,5 +109,11 @@ docker compose exec -T app pytest -q     # 백엔드 테스트 그린 확인
 - **f_dis_match 대응**: 학습의 disability_type 일치 → 서빙에선 ui_mode 일치.
   서버 내부 특성 전용, 추천 사유로 노출 금지 (MATCH-04).
 - **bio 폴백**: bio가 비면 관심사 태그 문자열로 임베딩 (MATCH-02-8).
+- **MATCH 점수 블렌드**: 학습 입력(지역·나이·장애유형이 명시된 템플릿 자기소개)과
+  서빙 계약 입력(bio+tags+age_band+ui_mode) 사이에 스키마 드리프트가 있음 — 학습 라벨의
+  주 결정 변수(지역)가 서빙 입력에 없고, 나이도 텍스트에서 사라짐(스모크에서 상이한 두
+  후보가 동일 점수로 나온 원인). 보완으로 모델 점수에 태그 교집합·연령대 일치를 가중
+  결합(0.5/0.3/0.2) — 두 신호는 학습 라벨 규칙(overlap, age_diff)과 동일 계열이라 정합적.
+  근본 해결은 계약 스키마로 프로필 합성 재생성 + 재학습 — 후속 계획.
 - 응답의 `risk_prob`·`level`·`probs`는 계약 외 부가 필드 — 백엔드는 `verdict`만 사용,
   데모·리포트 시연(실시간 위험도 스코어러)에 활용 가능.

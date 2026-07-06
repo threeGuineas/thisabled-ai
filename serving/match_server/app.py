@@ -12,7 +12,10 @@
     f_cosine, f_l2  : me.bio vs cand.bio SBERT 임베딩 (bio 없으면 태그 문자열로 폴백)
     f_dis_match     : 학습의 disability_type 일치를 ui_mode 일치로 대응
                       (서버 내부 특성 전용, 사유로 절대 노출하지 않음 — MATCH-04)
-score: LambdaMART raw score → sigmoid로 [0,1] 정규화.
+score: 블렌드 = W_MODEL·sigmoid(LambdaMART) + W_TAG·태그교집합 + W_AGE·연령대일치.
+    학습 입력(지역·나이·장애유형이 명시된 템플릿 자기소개)과 서빙 입력(bio+tags)의
+    스키마 드리프트를 보완 — 태그 교집합·연령대 일치는 학습 라벨 규칙(overlap,
+    age_diff)과 동일 계열 신호라 정합적. 근본 해결(계약 스키마 재학습)은 후속.
 reasons: 일반화 문장만 (관심사/연령대/소개 유사 — 명세 MATCH-03).
 """
 
@@ -27,23 +30,42 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI
+from huggingface_hub import hf_hub_download
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 
 MODEL_PATH = Path(
     os.getenv("MATCH_MODEL_PATH", "models/checkpoints/module2_lambdamart_embedding.pkl")
 )
+# 로컬에 pkl이 없으면 HF private repo에서 다운로드 (HF_TOKEN env 필요)
+MATCH_HF_REPO = os.getenv("MATCH_HF_REPO", "")
+MATCH_HF_FILE = os.getenv("MATCH_HF_FILE", "module2_lambdamart_embedding.pkl")
 SBERT_NAME = os.getenv("MATCH_SBERT_NAME", "jhgan/ko-sroberta-multitask")
 COSINE_REASON_MIN = float(os.getenv("MATCH_COSINE_REASON_MIN", "0.5"))
+
+# 점수 블렌드 가중치 (운영 설정값)
+W_MODEL = float(os.getenv("MATCH_W_MODEL", "0.5"))
+W_TAG = float(os.getenv("MATCH_W_TAG", "0.3"))
+W_AGE = float(os.getenv("MATCH_W_AGE", "0.2"))
 
 FEATURE_COLS = ["f_cosine", "f_l2", "f_dis_match"]  # 학습과 동일 순서 (build_pairs.py)
 
 _state: dict = {}
 
 
+def _resolve_model_path() -> Path:
+    if MODEL_PATH.exists():
+        return MODEL_PATH
+    if MATCH_HF_REPO:
+        return Path(hf_hub_download(repo_id=MATCH_HF_REPO, filename=MATCH_HF_FILE))
+    raise FileNotFoundError(
+        f"모델 없음: {MODEL_PATH} — 로컬 배치 또는 MATCH_HF_REPO(+HF_TOKEN) 설정 필요"
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    with open(MODEL_PATH, "rb") as f:
+    with open(_resolve_model_path(), "rb") as f:
         _state["ranker"] = pickle.load(f)
     _state["sbert"] = SentenceTransformer(SBERT_NAME)
     _state["sbert"].encode(["워밍업"])  # 첫 요청 지연 방지
@@ -112,14 +134,20 @@ async def score(body: ScoreIn):
     )
     raw = _state["ranker"].predict(features)
 
-    results = [
-        {
-            "user_id": c.user_id,
-            "score": round(1.0 / (1.0 + math.exp(-float(r))), 4),
-            "reasons": _reasons(body.me, c, float(cos)),
-        }
-        for c, r, cos in zip(body.candidates, raw, cosine, strict=False)
-    ]
+    results = []
+    for c, r, cos in zip(body.candidates, raw, cosine, strict=False):
+        model_score = 1.0 / (1.0 + math.exp(-float(r)))
+        tag_score = min(len(set(body.me.tags) & set(c.tags)), 3) / 3
+        age_score = 1.0 if body.me.age_band and body.me.age_band == c.age_band else 0.0
+        blended = W_MODEL * model_score + W_TAG * tag_score + W_AGE * age_score
+        results.append(
+            {
+                "user_id": c.user_id,
+                "score": round(blended, 4),
+                "model_score": round(model_score, 4),  # 계약 외 부가 필드 (데모·리포트용)
+                "reasons": _reasons(body.me, c, float(cos)),
+            }
+        )
     results.sort(key=lambda x: x["score"], reverse=True)
     return {"results": results}
 
