@@ -12,16 +12,19 @@ Colab에서 **실행·감독하고 결과를 검증**하는 것.
 
 ## 준비물 확인 (없으면 사용자에게 요청, 임의 생성·추측 금지)
 - 저장소 접근: GITHUB_TOKEN (private repo)
-- 데이터(git 밖, Drive에서 복사): data/synthetic/ (합성 + pan12_translated.jsonl),
-  data/eval/ (aihub_train.jsonl, aihub_real_holdout.jsonl, beep_real_holdout.jsonl)
+- 데이터(git 밖, **직접 업로드**): 사용자가 로컬에서 `zip -r data_bundle.zip data/synthetic data/eval`로
+  묶은 zip을 노트북 셀에서 `files.upload()`로 올린다 → 저장소 data/ 아래로 해제.
+  포함: data/synthetic/(합성 + pan12_translated.jsonl), data/eval/(aihub_train.jsonl,
+  aihub_real_holdout.jsonl, beep_real_holdout.jsonl). **Drive 경로 불필요.**
 - HF 업로드: HF_TOKEN (write)
-합성 데이터가 없으면 재생성하지 말고 중단·보고 (OpenAI 비용). Drive 경로를 사용자에게 물어라.
+합성 데이터가 없으면 재생성하지 말고 중단·보고 (OpenAI 비용).
+build_processed_dataset.py가 시드 raw를 요구하면 data/raw도 zip에 포함해 다시 올리라고 요청.
 
 ## 실행 (notebooks/06_retrain_binary_pan12.ipynb 순서대로)
 1. GPU 런타임 확인. 저장소 clone + 브랜치 checkout + pull.
 2. 의존성 설치, CUDA 확인.
-3. 데이터 배치 확인: data/synthetic·data/eval 비어있으면 중단·보고.
-   pan12_translated.jsonl 존재·건수 확인(현재 predator 190).
+3. 데이터 업로드(files.upload로 data_bundle.zip) → 해제 → data/synthetic·data/eval 확인.
+   비어있으면 중단·보고. pan12_translated.jsonl 존재·건수 확인(현재 predator 190).
 4. build_processed_dataset.py → build_final_dataset.py --synth-repeat 1
 5. train_module1.py --config configs/module1_binary.yaml
    → 로그에서 반드시 확인·보고:
