@@ -38,6 +38,20 @@ REAL_HOLDOUT_JSONLS = [
 DEDUP_THRESHOLD = 0.8  # MinHash Jaccard 임계값: 이 이상 유사한 합성 행은 시드와 중복 처리
 
 
+def _norm_text(text: object) -> str:
+    """문장부호·공백·대소문자를 무시하는 완전 일치 누수 검사 키."""
+    return re.sub(r"[^0-9a-z가-힣]+", "", str(text).lower())
+
+
+def _load_real_holdout_norm() -> set[str]:
+    texts: set[str] = set()
+    for path in REAL_HOLDOUT_JSONLS:
+        if path.exists():
+            holdout = pd.read_json(path, lines=True)
+            texts.update(_norm_text(text) for text in holdout["text"])
+    return texts
+
+
 def load_synthetic_splits(synth_dir: Path) -> dict[str, pd.DataFrame]:
     """synthetic_dir 에서 모든 카테고리의 JSONL 데이터를 읽어 split별 DataFrame으로 병합."""
     splits: dict[str, list[dict]] = {"train": [], "val": [], "test": []}
@@ -97,17 +111,10 @@ def _load_aihub_train() -> pd.DataFrame:
 
     # conv_id가 달라도 "왜 무슨 일인데?"처럼 같은 문장이 train/hold-out에 반복될 수 있다.
     # 실데이터 hold-out의 정규화 완전 일치 문장은 학습 투입 전에 제거한다.
-    def _norm(text: object) -> str:
-        return re.sub(r"[^0-9a-z가-힣]+", "", str(text).lower())
-
-    holdout_norm: set[str] = set()
-    for path in REAL_HOLDOUT_JSONLS:
-        if path.exists():
-            holdout = pd.read_json(path, lines=True)
-            holdout_norm.update(_norm(text) for text in holdout["text"])
+    holdout_norm = _load_real_holdout_norm()
     if holdout_norm:
         before = len(df)
-        df = df[~df["text"].map(_norm).isin(holdout_norm)].reset_index(drop=True)
+        df = df[~df["text"].map(_norm_text).isin(holdout_norm)].reset_index(drop=True)
         print(f"  → AI-Hub train↔실데이터 hold-out 완전 중복 {before - len(df)}건 제거")
     return df
 
@@ -154,11 +161,24 @@ def build_final_dataset(seed: int = 42, synth_repeat: int = 1, include_aihub: bo
                 parts.append(aihub_train)
                 desc.append(f"AI-Hub실({len(aihub_train)}, 시드중복 {n_dup}제거)")
 
-        merged_train = (
-            pd.concat(parts, ignore_index=True)
-            .sample(frac=1.0, random_state=seed)
-            .reset_index(drop=True)
-        )
+        merged_train = pd.concat(parts, ignore_index=True)
+
+        # 모든 소스에 동일한 최종 누수 가드를 적용한다. KOLD/UnSmile에도 실데이터
+        # hold-out과 같은 짧은 관용 문장이 반복될 수 있으므로 AI-Hub만 검사하면 부족하다.
+        holdout_norm = _load_real_holdout_norm()
+        if holdout_norm:
+            leak_mask = merged_train["text"].map(_norm_text).isin(holdout_norm)
+            if leak_mask.any():
+                removed_by_source = (
+                    merged_train.loc[leak_mask, "source"].value_counts().sort_index().to_dict()
+                )
+                merged_train = merged_train.loc[~leak_mask].reset_index(drop=True)
+                print(
+                    f"  → 최종 train↔실데이터 hold-out 완전 중복 {int(leak_mask.sum())}건 제거: "
+                    f"{removed_by_source}"
+                )
+
+        merged_train = merged_train.sample(frac=1.0, random_state=seed).reset_index(drop=True)
         save_dataset(merged_train, train_path)
         dist = merged_train["label"].value_counts().sort_index()
         total = len(merged_train)
