@@ -73,7 +73,12 @@ def load_aihub_dataframe(raw_dir: Path) -> pd.DataFrame:
                         }
                     )
 
-    return pd.DataFrame(records)
+    # AI-Hub 원본은 선택 입력이다. 파일이 하나도 없는 seed-only 재현 환경에서도
+    # 이후 hold-out 누수 가드와 downsampling이 동일한 스키마로 동작해야 한다.
+    return pd.DataFrame(
+        records,
+        columns=["text", "label", "source", "source_id", "conv_id"],
+    )
 
 
 def downsample_aihub(df: pd.DataFrame, target_size: int, seed: int) -> pd.DataFrame:
