@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -30,6 +31,10 @@ PROCESSED_DIR = ROOT / "data" / "processed"
 SYNTH_DIR = ROOT / "data" / "synthetic" / "emergency"
 EVAL_DIR = ROOT / "data" / "eval"
 AIHUB_TRAIN_JSONL = EVAL_DIR / "aihub_train.jsonl"  # 실데이터 train 투입분
+REAL_HOLDOUT_JSONLS = [
+    EVAL_DIR / "aihub_real_holdout.jsonl",
+    EVAL_DIR / "beep_real_holdout.jsonl",
+]
 DEDUP_THRESHOLD = 0.8  # MinHash Jaccard 임계값: 이 이상 유사한 합성 행은 시드와 중복 처리
 
 
@@ -88,7 +93,23 @@ def _load_aihub_train() -> pd.DataFrame:
     if not AIHUB_TRAIN_JSONL.exists():
         return pd.DataFrame(columns=cols)
     df = pd.read_json(AIHUB_TRAIN_JSONL, lines=True)
-    return df[cols]
+    df = df[cols].copy()
+
+    # conv_id가 달라도 "왜 무슨 일인데?"처럼 같은 문장이 train/hold-out에 반복될 수 있다.
+    # 실데이터 hold-out의 정규화 완전 일치 문장은 학습 투입 전에 제거한다.
+    def _norm(text: object) -> str:
+        return re.sub(r"[^0-9a-z가-힣]+", "", str(text).lower())
+
+    holdout_norm: set[str] = set()
+    for path in REAL_HOLDOUT_JSONLS:
+        if path.exists():
+            holdout = pd.read_json(path, lines=True)
+            holdout_norm.update(_norm(text) for text in holdout["text"])
+    if holdout_norm:
+        before = len(df)
+        df = df[~df["text"].map(_norm).isin(holdout_norm)].reset_index(drop=True)
+        print(f"  → AI-Hub train↔실데이터 hold-out 완전 중복 {before - len(df)}건 제거")
+    return df
 
 
 def build_final_dataset(seed: int = 42, synth_repeat: int = 1, include_aihub: bool = False) -> None:
