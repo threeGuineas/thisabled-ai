@@ -30,8 +30,11 @@ from pydantic import BaseModel
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 MODEL_DIR = Path(os.getenv("SAFE_MODEL_DIR", "models/checkpoints/module1_ce"))
-THRESHOLD = float(os.getenv("SAFE_FLAG_THRESHOLD", "0.5"))
-THRESHOLD_MINOR = float(os.getenv("SAFE_FLAG_THRESHOLD_MINOR", "0.35"))
+MODEL_REVISION = os.getenv("SAFE_MODEL_REVISION") or None
+# 2026-07-08 leak-free binary + AI-Hub in-domain 모델 실측 운영점.
+# 배포별 환경변수로 언제든 재보정 가능하다.
+THRESHOLD = float(os.getenv("SAFE_FLAG_THRESHOLD", "0.66"))
+THRESHOLD_MINOR = float(os.getenv("SAFE_FLAG_THRESHOLD_MINOR", "0.50"))
 MAX_LENGTH = int(os.getenv("SAFE_MAX_LENGTH", "128"))
 
 # 모델 헤드 크기에 맞춰 기동 시 결정 (이진 2 = 정상/주의, 4-class = 정상/주의/경고/긴급).
@@ -65,8 +68,8 @@ _state: dict = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", "2")))
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, revision=MODEL_REVISION)
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR, revision=MODEL_REVISION)
     model.eval()
     _state["tokenizer"] = tokenizer
     _state["model"] = model
@@ -118,7 +121,10 @@ async def health():
     return {
         "status": "ok",
         "model": str(MODEL_DIR),
+        "revision": MODEL_REVISION,
         "loaded": "model" in _state,
         "num_labels": _state.get("num_labels"),
         "labels": _state.get("labels"),
+        "threshold": THRESHOLD,
+        "threshold_minor": THRESHOLD_MINOR,
     }

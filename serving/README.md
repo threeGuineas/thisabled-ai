@@ -85,14 +85,15 @@ docker compose exec -T app pytest -q     # 백엔드 테스트 그린 확인
 
 | 변수 | 기본 | 의미 |
 | --- | --- | --- |
-| `SAFE_FLAG_THRESHOLD` | 0.5 | P(주의+경고+긴급) ≥ τ → flagged |
-| `SAFE_FLAG_THRESHOLD_MINOR` | 0.35 | 미성년 수신자 민감 임계값 (§4.5) |
+| `SAFE_FLAG_THRESHOLD` | 0.66 | 성인 운영점. 이진=P(주의), 4-class=P(주의+경고+긴급) |
+| `SAFE_FLAG_THRESHOLD_MINOR` | 0.50 | 미성년 수신자 민감 운영점 |
 | `SAFE_RULE_ASSIST` | 1 | 금전 사기 규칙 보조 레이어 on/off (모델 판정에 OR 결합) |
 | `SAFE_MAX_LENGTH` | 128 | 토크나이저 max_length |
 | `TORCH_NUM_THREADS` | 2 | CPU 스레드 |
 | `MATCH_COSINE_REASON_MIN` | 0.5 | "소개 내용이 비슷해요" 사유 최소 코사인 |
 | `MATCH_W_MODEL` / `MATCH_W_TAG` / `MATCH_W_AGE` | 0.5 / 0.3 / 0.2 | 점수 블렌드 가중치 (모델·태그 교집합·연령대 일치) |
 | `SAFE_MODEL_DIR` | 로컬 경로 | 로컬 체크포인트 경로 또는 HF repo id |
+| `SAFE_MODEL_REVISION` | 미지정(latest) | 재현 가능한 배포를 위한 HF commit SHA |
 | `MATCH_HF_REPO` | (없음) | 로컬 pkl 부재 시 다운로드할 HF repo id |
 | `HF_TOKEN` | (없음) | HF private repo read 토큰 |
 | `MATCH_W_MODEL` / `MATCH_W_TAG` / `MATCH_W_AGE` | 0.5 / 0.3 / 0.2 | 점수 블렌드 가중치 (모델·태그 교집합·연령대 일치) |
