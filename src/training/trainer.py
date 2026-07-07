@@ -6,11 +6,14 @@ Run via ``scripts/train_module1.py`` (locally for smoke, Colab A100 for real tra
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
 import yaml
+
+if TYPE_CHECKING:
+    import pandas as pd
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -51,7 +54,26 @@ class FocalLossTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 
-def build_compute_metrics():
+def build_compute_metrics(binary: bool = False):
+    if binary:
+        from sklearn.metrics import f1_score, precision_score, recall_score
+
+        def _bin(eval_pred):
+            logits, labels = eval_pred
+            preds = np.argmax(logits, axis=-1)
+            # 이진(0=정상, 1=주의). 주의 Recall이 주 KPI(미탐 최소화).
+            return {
+                "macro_f1": float(
+                    f1_score(labels, preds, labels=[0, 1], average="macro", zero_division=0)
+                ),
+                "caution_recall": float(recall_score(labels, preds, pos_label=1, zero_division=0)),
+                "normal_precision": float(
+                    precision_score(labels, preds, pos_label=0, zero_division=0)
+                ),
+            }
+
+        return _bin
+
     def _fn(eval_pred):
         logits, labels = eval_pred
         proba = torch.softmax(torch.tensor(logits), dim=-1).numpy()
@@ -66,6 +88,51 @@ def build_compute_metrics():
         return flat
 
     return _fn
+
+
+def collapse_binary(df: pd.DataFrame) -> pd.DataFrame:
+    """4-class label {1,2,3}→1(주의), 0→0(정상). docs/safe_라벨_및_판정_기준.md §2."""
+    df = df.copy()
+    df["label"] = (df["label"].astype(int) > 0).astype("int64")
+    return df
+
+
+def load_extra_caution(project_root: Path, data_cfg: dict[str, Any]) -> pd.DataFrame | None:
+    """추가 '주의(1)' 소스(jsonl)를 병합용 DataFrame으로. PAN12 predator 등.
+
+    extra_caution_filter로 특정 컬럼값만 채택(예: split_role==predator). 경로 없으면 None.
+    """
+    import json as _json
+
+    import pandas as pd
+
+    paths = data_cfg.get("extra_caution_jsonl") or []
+    filt = data_cfg.get("extra_caution_filter") or {}
+    rows: list[dict[str, Any]] = []
+    for rel in paths:
+        p = project_root / rel
+        if not p.exists():
+            print(f"[extra_caution] 경로 없음, 건너뜀: {rel}")
+            continue
+        with p.open(encoding="utf-8") as f:
+            for ln in f:
+                if not ln.strip():
+                    continue
+                r = _json.loads(ln)
+                if all(r.get(k) == v for k, v in filt.items()):
+                    rows.append(
+                        {
+                            "text": r["text"],
+                            "label": 1,
+                            "source": r.get("source", "extra"),
+                            "source_id": f"{r.get('source', 'extra')}_{r.get('conv_id', '')}"
+                            f"_{r.get('win_idx', '')}",
+                        }
+                    )
+    if not rows:
+        return None
+    print(f"[extra_caution] 병합 {len(rows)}건 (label=1)")
+    return pd.DataFrame(rows)
 
 
 def build_focal_loss(loss_cfg: dict[str, Any]) -> tuple[FocalLoss, float, list[float] | None]:
@@ -89,6 +156,7 @@ def build_trainer(
     output_dir: str,
     report_to: list[str],
     load_best: bool = True,
+    binary: bool = False,
 ) -> FocalLossTrainer:
     """TrainingArguments + FocalLossTrainer 구성 (학습 본 경로와 OOF fold가 공유).
 
@@ -130,7 +198,7 @@ def build_trainer(
         "train_dataset": train_ds,
         "eval_dataset": val_ds,
         "data_collator": DataCollatorWithPadding(tokenizer),
-        "compute_metrics": build_compute_metrics(),
+        "compute_metrics": build_compute_metrics(binary=binary),
         "focal_loss": focal,
     }
     sig = inspect.signature(_HFTrainer.__init__)
@@ -176,6 +244,9 @@ def train_module1(
 
     import pandas as pd
 
+    data_cfg = cfg.get("data", {})
+    binary = bool(data_cfg.get("binary", False))
+
     train_df = pd.read_parquet(processed / "train.parquet")
 
     warning_augment_ratio = (
@@ -205,14 +276,38 @@ def train_module1(
                     frac=1.0, random_state=cfg["training"]["seed"]
                 ).reset_index(drop=True)
 
+    val_df = pd.read_parquet(processed / "val.parquet")
+
+    if binary:
+        # 1) 추가 '주의' 소스(PAN12 predator 등) 병합 — 붕괴 전 원 라벨과 무관하게 label=1
+        extra = load_extra_caution(project_root, data_cfg)
+        if extra is not None:
+            train_df = pd.concat([train_df, extra], ignore_index=True)
+        # 2) train/val label {1,2,3}→1 붕괴
+        train_df = collapse_binary(train_df)
+        val_df = collapse_binary(val_df)
+        train_df = train_df.sample(frac=1.0, random_state=cfg["training"]["seed"]).reset_index(
+            drop=True
+        )
+        dist = train_df["label"].value_counts().to_dict()
+        print(f"[binary] train label 분포 (0=정상,1=주의): {dist}")
+
     train_ds = RiskTextDataset(train_df, tokenizer, model_cfg["max_length"])
-    val_ds = RiskTextDataset(processed / "val.parquet", tokenizer, model_cfg["max_length"])
+    val_ds = RiskTextDataset(val_df, tokenizer, model_cfg["max_length"])
 
     focal, gamma, alpha = build_focal_loss(loss_cfg)
 
     ckpt_dir = project_root / model_cfg.get("checkpoint_dir", cfg["paths"]["checkpoint_dir"])
     trainer = build_trainer(
-        cfg, model, tokenizer, train_ds, val_ds, focal, str(ckpt_dir), report_to=["mlflow"]
+        cfg,
+        model,
+        tokenizer,
+        train_ds,
+        val_ds,
+        focal,
+        str(ckpt_dir),
+        report_to=["mlflow"],
+        binary=binary,
     )
 
     mlflow_cfg = cfg.get("mlflow", {})

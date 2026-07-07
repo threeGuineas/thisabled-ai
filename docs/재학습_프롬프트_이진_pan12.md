@@ -44,11 +44,13 @@ train↔holdout 및 소스 간 누수 차단(코드로 확인 후 학습).
 1. python scripts/build_processed_dataset.py          # 시드 split 재생성
 2. python scripts/build_final_dataset.py --synth-repeat 8   # (긴급 oversample은 이진에선
    불필요할 수 있음 — 붕괴 후 분포 보고 --synth-repeat 1~2로 낮추는 것 검토)
-3. **이진 config로 학습**: configs/module1_kcelectra_final.yaml을 복사해
-   configs/module1_binary.yaml 생성 후 num_labels=2, loss.type=ce(가중은 붕괴 후 분포로 결정,
-   불균형 크지 않으면 class_weight 없이), stacking.enabled=false(서빙은 PLM 단독), 
-   checkpoint_dir="models/checkpoints/module1_binary" 로 수정.
-   → 학습 스크립트가 num_labels·라벨 붕괴를 반영하도록 최소 수정(라벨 map 함수 추가).
+3. **이진 학습 — 준비 완료됨**: `configs/module1_binary.yaml`과 trainer 이진 경로가 이미 있음.
+   그대로 실행: `python scripts/train_module1.py --config configs/module1_binary.yaml`
+   config의 `data.binary: true`가 train/val 라벨 {1,2,3}→1 붕괴를 수행하고,
+   `data.extra_caution_jsonl`(pan12_translated.jsonl, split_role==predator만)를 label=1로 병합.
+   metrics도 이진(caution_recall·normal_precision·macro_f1)으로 자동 분기.
+   ※ PAN12 predator 현재 190건 — 쿼터 리셋 후 translate 재실행하면 자동으로 더 병합됨(경로 동일).
+   ※ 붕괴 후 분포가 출력됨(`[binary] train label 분포`) — 확인만.
 4. 평가 (두 관점 모두 보고):
    a) argmax 기준: 홀드아웃 주의(1) Recall, 정상(0) Precision, F1, 혼동행렬
    b) 서빙 임계값 기준: P(주의) ≥ 0.50(성인)/0.35(미성년) → flagged, 홀드아웃 flagged율

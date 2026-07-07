@@ -1,0 +1,54 @@
+# Module ① — 이진(정상/주의) 재학습 config
+# 근거: docs/safe_라벨_및_판정_기준.md (4-class→이진 전환), docs/재학습_프롬프트_이진_pan12.md
+#
+# 사용 흐름:
+#   1) python scripts/build_processed_dataset.py
+#   2) python scripts/build_final_dataset.py --synth-repeat 1   # 이진은 불균형 완화 → oversample 최소
+#   3) python scripts/train_module1.py --config configs/module1_binary.yaml
+#   4) 평가: 홀드아웃 주의(1) Recall / 정상(0) Precision, 서빙 임계값 P(주의)≥τ 관점 병행
+
+model:
+  name: "beomi/KcELECTRA-base-v2022"
+  num_labels: 2                 # 0=정상, 1=주의
+  max_length: 128
+  dropout: 0.1
+  checkpoint_dir: "models/checkpoints/module1_binary"
+
+# 이진 재정식화 + 추가 소스 병합 (trainer가 data 섹션을 읽어 처리)
+data:
+  binary: true                  # train/val label {1,2,3}→1 붕괴
+  # PAN12 predator 번역분만 '주의(1)'로 병합 (normal 사용 금지 — 검수 발견).
+  # split_role=="predator" 행만 label=1로 추가. 경로 없으면 조용히 건너뜀.
+  extra_caution_jsonl:
+    - "data/synthetic/pan12_translated.jsonl"
+  extra_caution_filter:
+    split_role: "predator"
+
+training:
+  batch_size: 32
+  eval_batch_size: 64
+  num_epochs: 3
+  lr: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  grad_accum_steps: 1
+  fp16: true
+  seed: 42
+
+loss:
+  type: "ce"
+  focal_gamma: 0.0
+  # 이진 붕괴 후 분포는 대략 정상:주의 ≈ 4:6 — 큰 불균형 아님.
+  # 필요 시 [1.0, 1.0]에서 조정 (붕괴 후 실제 분포 보고 결정).
+  alpha: [1.0, 1.0]
+
+stacking:
+  enabled: false                # 서빙은 PLM 단독 (스태커 미사용)
+
+paths:
+  checkpoint_dir: "models/checkpoints/module1_binary"
+  report_dir: "reports/validation_reports/module1_binary"
+
+labels:
+  - "정상"
+  - "주의"
