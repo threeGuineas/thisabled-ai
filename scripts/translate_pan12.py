@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 IN_PATH = ROOT / "data" / "processed" / "pan12_extracted.jsonl"
 OUT_PATH = ROOT / "data" / "synthetic" / "pan12_translated.jsonl"
 BATCH = 20  # 한 요청에 묶을 window 수
-MODEL = os.getenv("PAN12_TRANSLATE_MODEL", "gemini-2.0-flash")
+MODEL = os.getenv("PAN12_TRANSLATE_MODEL", "gemini-flash-latest")
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 SYSTEM = """당신은 아동·청소년 온라인 보호 연구를 위한 데이터 구축 번역가입니다.
@@ -99,6 +99,7 @@ def translate_batch(api_key: str, rows: list[dict]) -> list[str | None]:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=0, help="파일럿용 — 앞에서 N개만 번역 (0=전체)")
+    ap.add_argument("--sleep", type=float, default=4.0, help="배치 간 대기 초 (무료 티어 rate limit 대응)")
     args = ap.parse_args()
 
     try:
@@ -145,6 +146,8 @@ def main() -> None:
                 )
             f.flush()
             print(f"  {min(i + BATCH, len(todo))}/{len(todo)} (스킵 {skipped})")
+            if i + BATCH < len(todo):
+                time.sleep(args.sleep)
 
     print(f"완료 → {OUT_PATH} (스킵 {skipped}건)")
     print("다음 단계: 무작위 샘플 수동 검수 (계획서 ③) 후 병합")
