@@ -100,8 +100,12 @@ docker compose exec -T app pytest -q     # 백엔드 테스트 그린 확인
 ## 설계 메모 (보고서 반영)
 
 - **스태커 미사용**: LightGBM 스태커의 meta feature에 학습 데이터 전용 `source` 컬럼이
-  필요해 서빙에선 KcELECTRA softmax를 직접 사용. 4-class 확률의 위험 합산 + 임계값으로
+  필요해 서빙에선 KcELECTRA softmax를 직접 사용. 확률의 위험 합산 + 임계값으로
   binary verdict 산출 — 임계값은 운영 설정값(명세 §4.5).
+- **이진·4-class 자동 지원**: 서버가 기동 시 `model.config.num_labels`(2 또는 4)를 읽어
+  라벨을 결정. `risk_prob = sum(probs[1:])`는 이진에선 P(주의), 4-class에선 P(주의+경고+긴급)
+  으로 동일하게 작동 → 재학습 전환기에 코드 수정 없이 두 모델 모두 서빙. `/health`의
+  `num_labels`로 로드된 모델 확인 가능. (권장: docs/재학습_프롬프트_이진_pan12.md의 이진 모델)
 - **하이브리드(모델+규칙)**: 학습 시드가 혐오표현 중심이라 금전 사기 유형(SAFE-02 ①)
   커버리지가 약함 — 스모크에서 사기 문장 risk_prob 0.07 실측. 규칙 보조 레이어를 OR로
   결합해 재현율 확보(플래그 추가만, 해제 없음 → 오탐 소폭 증가 트레이드오프).

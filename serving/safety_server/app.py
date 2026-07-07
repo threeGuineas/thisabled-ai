@@ -34,7 +34,10 @@ THRESHOLD = float(os.getenv("SAFE_FLAG_THRESHOLD", "0.5"))
 THRESHOLD_MINOR = float(os.getenv("SAFE_FLAG_THRESHOLD_MINOR", "0.35"))
 MAX_LENGTH = int(os.getenv("SAFE_MAX_LENGTH", "128"))
 
-LABEL_NAMES = ["정상", "주의", "경고", "긴급"]
+# 모델 헤드 크기에 맞춰 기동 시 결정 (이진 2 = 정상/주의, 4-class = 정상/주의/경고/긴급).
+# 서빙 verdict는 어느 쪽이든 P(주의 이상 위험) = sum(probs[1:])로 동일하게 산출되므로
+# 한 서버가 두 모델을 모두 지원한다 (재학습 전환기 안전).
+LABELS_BY_N = {2: ["정상", "주의"], 4: ["정상", "주의", "경고", "긴급"]}
 
 # ── 규칙 보조 레이어 (SAFE-02 유형 1: 금전 요구·사기) ──────────────────────
 # 학습 시드(Unsmile/KOLD)가 혐오표현 중심이라 금전 사기 커버리지가 약함(스모크에서
@@ -67,6 +70,9 @@ async def lifespan(app: FastAPI):
     model.eval()
     _state["tokenizer"] = tokenizer
     _state["model"] = model
+    n = int(model.config.num_labels)
+    _state["labels"] = LABELS_BY_N.get(n, [str(i) for i in range(n)])
+    _state["num_labels"] = n
     _infer("워밍업 문장입니다.")  # 첫 요청 지연 방지
     yield
     _state.clear()
@@ -91,21 +97,28 @@ def _infer(text: str) -> list[float]:
 async def analyze(body: AnalyzeIn):
     t0 = time.perf_counter()
     probs = _infer(body.text)
-    p_risk = sum(probs[1:])  # 주의+경고+긴급
+    p_risk = sum(probs[1:])  # 이진=P(주의), 4-class=P(주의+경고+긴급)
     threshold = THRESHOLD_MINOR if body.receiver_is_minor else THRESHOLD
     rule_hit = _rule_hit(body.text)
     verdict = "flagged" if (p_risk >= threshold or rule_hit) else "safe"
+    labels = _state["labels"]
     # 계약 필수 키는 verdict 하나 — 나머지는 데모·리포트용 부가 정보 (백엔드는 무시)
     return {
         "verdict": verdict,
         "rule_assist": rule_hit,
         "risk_prob": round(p_risk, 4),
-        "level": LABEL_NAMES[int(max(range(4), key=lambda i: probs[i]))],
-        "probs": {LABEL_NAMES[i]: round(p, 4) for i, p in enumerate(probs)},
+        "level": labels[int(max(range(len(probs)), key=lambda i: probs[i]))],
+        "probs": {labels[i]: round(p, 4) for i, p in enumerate(probs)},
         "latency_ms": round((time.perf_counter() - t0) * 1000, 1),
     }
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "model": str(MODEL_DIR), "loaded": "model" in _state}
+    return {
+        "status": "ok",
+        "model": str(MODEL_DIR),
+        "loaded": "model" in _state,
+        "num_labels": _state.get("num_labels"),
+        "labels": _state.get("labels"),
+    }
