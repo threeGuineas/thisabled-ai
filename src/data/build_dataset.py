@@ -139,7 +139,12 @@ def build_unified_dataset(
             + (kold_df["guid"].astype(str) if "guid" in kold_df else kold_df.index.astype(str)),
         }
     )
-    return pd.concat([us, ko, aihub_df], ignore_index=True)
+    parts = [us, ko]
+    if not aihub_df.empty:
+        parts.append(aihub_df)
+    unified = pd.concat(parts, ignore_index=True)
+    unified["label"] = unified["label"].astype(np.int8)
+    return unified
 
 
 def stratified_group_split(
