@@ -14,18 +14,18 @@
 
 ## 1. 파이프라인 (5단계)
 
-### ① 추출
-- ground truth의 predator ID가 참여한 대화에서 **predator 발화 턴**만 세그먼트로 추출
-- 필터: 3단어 미만·URL·이모티콘만인 턴 제거, 대화당 최대 N턴 샘플링(편중 방지)
+### ① 추출 (대화 window 방식)
+- ground truth의 predator ID가 참여한 대화에서 predator 발화를 순서대로 4턴씩 묶은 window**로 추출
+- 필터: window 합산 최소 단어 수·URL 제거, 대화당 최대 window 수 제한(편중 방지)
 - 정상 풀: 같은 포맷으로 IRC/Omegle 정상 대화 턴 추출 (**주의 분량과 1:1**)
-- 목표 규모: 주의 3,000~5,000턴 + 정상 동수 (1차분 — 효과 확인 후 증분)
+- 파일럿 규모: predator·정상 각 250 window (효과 확인 후 증분). training 코퍼스 사용
 
-### ② 번역·현지화 (GPT-4o-mini 배치)
+### ② 번역·현지화 (Gemini 배치)
 - 지시: 직역이 아니라 **한국 메신저 대화체로 현지화** — 반말, 축약, 초성체 일부,
   이름·지역·학교 등은 한국식 익명 치환, 문화 맥락(달러→만원 등) 변환
 - 시스템 프롬프트에 "아동 보호 연구용 유해 대화 번역" 맥락 명시 (거부 응답 대비 재시도 로직)
-- 예상 비용: 1만 턴 × 평균 30토큰 수준 — GPT-4o-mini 기준 수 달러 내
-- 산출 스키마: `{text_ko, source:"pan12", split_role:"predator|normal", conv_id, turn_idx}`
+- 예상 비용: 1만 턴 × 평균 30토큰 수준 — Gemini 2.0 Flash 저비용·무료 구간
+- 산출 스키마: `{text_ko, source:"pan12", split_role:"predator|normal", conv_id, win_idx}`
 
 ### ③ 품질 검증
 - 무작위 200건 수동 검수: 번역 자연스러움 / 그루밍 신호 보존 / 라벨 타당성 (predator 턴이어도
