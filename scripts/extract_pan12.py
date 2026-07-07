@@ -84,6 +84,12 @@ def main() -> None:
     ap.add_argument("--per-conv", type=int, default=5, help="대화당 최대 window")
     ap.add_argument("--window", type=int, default=4, help="window 당 연속 턴 수")
     ap.add_argument("--min-words", type=int, default=6, help="window 최소 단어 수")
+    ap.add_argument(
+        "--predator-only",
+        action="store_true",
+        help="predator window만 추출('주의' 증강 전용). PAN12 normal(IRC/Omegle)은 성적·거친 "
+        "내용이 많아 '정상' 라벨로 부적합 — 정상은 기존 시드 clean에서 확보. (검수 발견, 권장)",
+    )
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
     rng = random.Random(args.seed)
@@ -137,7 +143,7 @@ def main() -> None:
     rng.shuffle(predator_wins)
     rng.shuffle(normal_wins)
     predator_wins = predator_wins[: args.target]
-    normal_wins = normal_wins[: len(predator_wins)]  # 1:1
+    normal_wins = [] if args.predator_only else normal_wins[: len(predator_wins)]  # 1:1
 
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with OUT_PATH.open("w", encoding="utf-8") as f:
@@ -145,6 +151,8 @@ def main() -> None:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
     print(f"predator {len(predator_wins)} / normal {len(normal_wins)} window → {OUT_PATH}")
+    if not args.predator_only:
+        print("⚠ 검수: PAN12 normal은 '정상' 라벨로 부적합(성적·거친 내용). --predator-only 권장.")
     print("다음 단계: python scripts/translate_pan12.py")
 
 

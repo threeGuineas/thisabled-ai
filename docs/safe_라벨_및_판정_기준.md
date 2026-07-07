@@ -85,7 +85,7 @@ FE 문구는 "주의"로 통일 ("경고" 사용 금지 — 구 4-class 용어�
 
 | 소스 | 내용 | 용도 |
 |---|---|---|
-| PAN12 (Zenodo 공개) | Perverted Justice 실제 그루밍 채팅 + IRC/Omegle 정상 대화 | predator 세그먼트 번역 → 주의 / 정상 세그먼트 일부 번역 → 정상 |
+| PAN12 (Zenodo 공개) | Perverted Justice 실제 그루밍 채팅 + IRC/Omegle 대화 | **predator window만** 번역 → 주의. normal은 성적·거친 내용이라 '정상' 부적합(검수 발견) → 미사용, 정상은 시드 clean에서 확보 |
 | PANC / ChatCoder2 | PAN12 재구성 (조기 탐지용 세그먼트) | 시퀀스 탐지는 범위 밖 — 세그먼트 추출 참고 |
 
 핵심 주의: ① 번역투 편향 — 모델이 "번역체 = 주의"를 학습하지 않도록 **정상 대화도 같은
