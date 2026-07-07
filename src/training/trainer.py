@@ -144,9 +144,20 @@ def build_trainer(
 def train_module1(
     config_path: str | Path,
     project_root: str | Path,
+    override_params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """End-to-end fine-tuning entry point."""
     cfg = load_config(config_path)
+
+    if override_params:
+        for k, v in override_params.items():
+            if k in cfg["training"]:
+                cfg["training"][k] = v
+            elif k in cfg["loss"]:
+                cfg["loss"][k] = v
+            elif k == "alpha":
+                cfg["loss"]["alpha"] = v
+
     project_root = Path(project_root)
     set_seed(cfg["training"]["seed"])
 
@@ -161,7 +172,40 @@ def train_module1(
     )
 
     processed = project_root / "data" / "processed"
-    train_ds = RiskTextDataset(processed / "train.parquet", tokenizer, model_cfg["max_length"])
+    import json
+
+    import pandas as pd
+
+    train_df = pd.read_parquet(processed / "train.parquet")
+
+    warning_augment_ratio = (
+        override_params.get("warning_augment_ratio", 0) if override_params else 0
+    )
+    if warning_augment_ratio > 0:
+        warning_synth_dir = project_root / "data" / "synthetic" / "warning"
+        synth_rows = []
+        for p in warning_synth_dir.rglob("*.jsonl"):
+            with p.open(encoding="utf-8") as f:
+                for ln in f:
+                    if ln.strip():
+                        synth_rows.append(json.loads(ln))
+
+        if synth_rows:
+            synth_df = pd.DataFrame(synth_rows)
+            orig_warning_count = len(train_df[train_df["label"] == 2])
+            n_augment = int(orig_warning_count * warning_augment_ratio)
+            if n_augment > 0:
+                augment_df = synth_df.sample(
+                    n=min(n_augment, len(synth_df)),
+                    replace=True,
+                    random_state=cfg["training"]["seed"],
+                )
+                train_df = pd.concat([train_df, augment_df], ignore_index=True)
+                train_df = train_df.sample(
+                    frac=1.0, random_state=cfg["training"]["seed"]
+                ).reset_index(drop=True)
+
+    train_ds = RiskTextDataset(train_df, tokenizer, model_cfg["max_length"])
     val_ds = RiskTextDataset(processed / "val.parquet", tokenizer, model_cfg["max_length"])
 
     focal, gamma, alpha = build_focal_loss(loss_cfg)
@@ -188,6 +232,8 @@ def train_module1(
         "cfg/train_size": len(train_ds),
         "cfg/val_size": len(val_ds),
     }
+    if override_params and "warning_augment_ratio" in override_params:
+        cfg_params["cfg/warning_augment_ratio"] = override_params["warning_augment_ratio"]
 
     # MLflow run으로 학습 수명을 감싼다. report_to=["mlflow"]의 HF 콜백은 active run을
     # 재사용하므로 학습 중 지표와 사후 평가 지표가 같은 run에 기록된다.
