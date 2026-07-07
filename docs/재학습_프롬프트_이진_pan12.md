@@ -1,5 +1,12 @@
 # 재학습 실행 프롬프트 — SAFE 이진 전환 + PAN12 반영 (Colab)
 
+> ✅ **실행 완료 (2026-07-08)**: 이진 재학습 성공, 실데이터 홀드아웃 5,491건에서
+> 주의 Recall 0.859 / 정상 Precision 0.752 / Macro-F1 0.775 (τ=0.5), 첫 시도 통과.
+> PAN12 predator 190건 병합 확인, train {정상 19941, 주의 28386}, best=epoch1.
+> 남은 것: HF 업로드(soyuncj/thisabled-safety-kcelectra) → 서빙 컨테이너 재시작.
+> 아래는 실행 당시 지시 원본(재현·재실행용 보존).
+
+
 아래 블록을 Colab(또는 GPU 환경)의 AI 세션에 그대로 붙여 사용한다. 저장소는 thisabled-ai,
 브랜치는 `feature/grooming-augmentation`(PAN12·이진 문서·스크립트가 여기 있음).
 
