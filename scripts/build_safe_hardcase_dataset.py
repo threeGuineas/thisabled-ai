@@ -183,6 +183,39 @@ RISK_V3_BASES = {
     ],
 }
 
+# v4: blind v5 fresh 회귀에서 놓친 패턴 정조준.
+#  - FP: 접근성 편의제공 정상문을 위험으로 오판(p=0.93) → 다양한 benign 접근성 보강
+#  - FN: 기기·통신 감시형 coercive_control(p=0.15, 어법만 바뀌자 놓침) → 감시 대상 다양화
+#  - FN: 혼자 있는 시간·동선 routine_recon(p=0.50) → 어법 다양화
+# blind v1~v5 및 이전 hard-case 와 어휘를 달리해 near-dup(0.8) 가드를 통과하도록 작성.
+NORMAL_V4_BASES = {
+    "accessibility_help_v4": [
+        "화면을 잘 못 보면 소리로 읽어 주는 기능을 켜 드릴게요.",
+        "자막이 필요하면 자막 있는 영상으로 다시 보내 드릴게요.",
+        "휠체어로 들어오기 편한 입구를 미리 확인해 둘게요.",
+        "손이 불편하면 음성으로 입력할 수 있게 설정을 도와줄게.",
+        "수어 통역이 필요한지 행사 담당자에게 여쭤봐 두었어요.",
+        "천천히 읽어도 되니 이해 안 되는 부분은 다시 물어봐.",
+    ],
+}
+
+RISK_V4_BASES = {
+    "coercive_control": [
+        "통화 기록이랑 문자함을 매일 나한테 열어서 보여 주고 지우지 마.",
+        "SNS 비밀번호를 넘기고 누구랑 대화하는지 전부 확인시켜.",
+        "폰은 잠그지 말고 언제든 내가 뒤져 볼 수 있게 놔둬.",
+        "위치 공유를 항상 켜 두고 지금 어디인지 실시간으로 대.",
+        "메신저 대화는 하나도 지우지 말고 매일 내 검사를 받아.",
+    ],
+    "routine_recon": [
+        "학원 안 가는 날에 혼자 뭐 하고 어디 있는지 다 알려 줘.",
+        "집에 아무도 없는 시간대가 언제인지 정확히 적어서 보내.",
+        "매일 지나가는 길이랑 몇 시에 어디를 지나는지 알려 줘.",
+        "주말에 혼자 있는 때가 생기면 나한테만 살짝 말해 줘.",
+        "학교 마치고 데리러 갈 테니 끝나는 시간과 장소를 대.",
+    ],
+}
+
 PREFIXES = ["", "오늘 ", "중요한 얘기인데 ", "다시 말하지만 "]
 NORMAL_SUFFIXES = ["", " 편할 때 확인해.", "부담되면 말해 줘.", "답장은 나중에 해도 괜찮아."]
 RISK_SUFFIXES = ["", "지금 바로 해.", "거절하면 후회할 거야.", "다른 사람에게 알리면 안 돼."]
@@ -192,11 +225,15 @@ def normalize(text: str) -> str:
     return re.sub(r"[^0-9a-z가-힣]+", "", text.lower())
 
 
-def build_rows(include_v2: bool = False, include_v3: bool = False) -> list[dict]:
-    # v3는 v2를, v2는 v1을 누적한다 (라운드가 올라갈수록 이전 hard-case 전부 포함).
+def build_rows(
+    include_v2: bool = False, include_v3: bool = False, include_v4: bool = False
+) -> list[dict]:
+    # 라운드는 누적된다: v4 ⊇ v3 ⊇ v2 ⊇ v1 (이전 hard-case 전부 포함).
+    if include_v4:
+        include_v3 = True
     if include_v3:
         include_v2 = True
-    version = "v3" if include_v3 else "v2" if include_v2 else "v1"
+    version = "v4" if include_v4 else "v3" if include_v3 else "v2" if include_v2 else "v1"
     rows: list[dict] = []
     groups_to_build = [
         (0, NORMAL_BASES, NORMAL_SUFFIXES),
@@ -211,6 +248,11 @@ def build_rows(include_v2: bool = False, include_v3: bool = False) -> list[dict]
         groups_to_build += [
             (0, NORMAL_V3_BASES, NORMAL_SUFFIXES),
             (1, RISK_V3_BASES, RISK_SUFFIXES),
+        ]
+    if include_v4:
+        groups_to_build += [
+            (0, NORMAL_V4_BASES, NORMAL_SUFFIXES),
+            (1, RISK_V4_BASES, RISK_SUFFIXES),
         ]
     for label, groups, suffixes in groups_to_build:
         for slice_name, bases in groups.items():
@@ -252,6 +294,7 @@ def main() -> int:
     )
     parser.add_argument("--include-v2", action="store_true")
     parser.add_argument("--include-v3", action="store_true")
+    parser.add_argument("--include-v4", action="store_true")
     parser.add_argument(
         "--forbidden",
         type=Path,
@@ -260,7 +303,9 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    rows = build_rows(include_v2=args.include_v2, include_v3=args.include_v3)
+    rows = build_rows(
+        include_v2=args.include_v2, include_v3=args.include_v3, include_v4=args.include_v4
+    )
     forbidden = [text for path in args.forbidden for text in read_jsonl_texts(path)]
     forbidden_exact = {normalize(text) for text in forbidden}
     exact = [row["source_id"] for row in rows if normalize(row["text"]) in forbidden_exact]
