@@ -30,6 +30,9 @@ from pydantic import BaseModel
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 MODEL_DIR = Path(os.getenv("SAFE_MODEL_DIR", "models/checkpoints/module1_ce"))
+# HF repo id 사용 시 로드할 커밋을 고정 (재현성·롤백 안전). 미지정이면 main HEAD.
+# 로컬 경로 SAFE_MODEL_DIR이면 무시된다.
+MODEL_REVISION = os.getenv("SAFE_MODEL_REVISION") or None
 THRESHOLD = float(os.getenv("SAFE_FLAG_THRESHOLD", "0.5"))
 THRESHOLD_MINOR = float(os.getenv("SAFE_FLAG_THRESHOLD_MINOR", "0.35"))
 MAX_LENGTH = int(os.getenv("SAFE_MAX_LENGTH", "128"))
@@ -65,14 +68,16 @@ _state: dict = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", "2")))
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, revision=MODEL_REVISION)
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR, revision=MODEL_REVISION)
     model.eval()
     _state["tokenizer"] = tokenizer
     _state["model"] = model
     n = int(model.config.num_labels)
     _state["labels"] = LABELS_BY_N.get(n, [str(i) for i in range(n)])
     _state["num_labels"] = n
+    # HF hub 로드 시 실제 해석된 커밋 SHA. 로컬 경로면 None → 요청값으로 폴백.
+    _state["revision"] = getattr(model.config, "_commit_hash", None) or MODEL_REVISION
     _infer("워밍업 문장입니다.")  # 첫 요청 지연 방지
     yield
     _state.clear()
@@ -118,6 +123,7 @@ async def health():
     return {
         "status": "ok",
         "model": str(MODEL_DIR),
+        "revision": _state.get("revision"),
         "loaded": "model" in _state,
         "num_labels": _state.get("num_labels"),
         "labels": _state.get("labels"),

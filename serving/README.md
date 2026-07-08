@@ -93,6 +93,7 @@ docker compose exec -T app pytest -q     # 백엔드 테스트 그린 확인
 | `MATCH_COSINE_REASON_MIN` | 0.5 | "소개 내용이 비슷해요" 사유 최소 코사인 |
 | `MATCH_W_MODEL` / `MATCH_W_TAG` / `MATCH_W_AGE` | 0.5 / 0.3 / 0.2 | 점수 블렌드 가중치 (모델·태그 교집합·연령대 일치) |
 | `SAFE_MODEL_DIR` | 로컬 경로 | 로컬 체크포인트 경로 또는 HF repo id |
+| `SAFE_MODEL_REVISION` | (없음=main) | HF repo id 사용 시 로드할 커밋 SHA 고정. `/health.revision`으로 실제 로드값 확인 |
 | `MATCH_HF_REPO` | (없음) | 로컬 pkl 부재 시 다운로드할 HF repo id |
 | `HF_TOKEN` | (없음) | HF private repo read 토큰 |
 | `MATCH_W_MODEL` / `MATCH_W_TAG` / `MATCH_W_AGE` | 0.5 / 0.3 / 0.2 | 점수 블렌드 가중치 (모델·태그 교집합·연령대 일치) |
