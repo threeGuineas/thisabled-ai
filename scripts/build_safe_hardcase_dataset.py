@@ -147,6 +147,42 @@ RISK_V2_BASES = {
     ],
 }
 
+# v3: blind v4 회귀에서 드러난 약점(fraud_credentials·coercive_control recall 0.75,
+# 정당한 삭제·환급 안내를 위험으로 본 FP)을 정조준한다. blind v1~v4 문장과는
+# 어휘를 달리해 near-dup(0.8) 누수 가드를 통과하도록 작성했다.
+NORMAL_V3_BASES = {
+    "records_benign": [
+        "촬영본 삭제는 기관 민원실에 정식 서식으로 요청해 두었어요.",
+        "열람하신 자료의 파기는 담당 부서에 공문으로 접수됩니다.",
+        "분실 신고 접수증 번호로 처리 상황을 조회하실 수 있어요.",
+        "회의 기록 수정은 총무팀 공식 메일로 요청하면 반영됩니다.",
+        "개인정보 열람 청구서는 홈페이지 서식을 내려받아 제출하세요.",
+    ],
+    "financial_benign_v3": [
+        "환급은 선입금을 요구하지 않으니 관공서에 직접 확인하세요.",
+        "인증 문자 숫자는 어떤 상담원에게도 불러 주면 안 됩니다.",
+        "요금 정정은 통신사 공식 번호로 전화해 처리하시면 됩니다.",
+        "지원 대상 안내가 와도 개인정보는 공식 창구에서만 확인하세요.",
+    ],
+}
+
+RISK_V3_BASES = {
+    "fraud_credentials": [
+        "환급 처리해 줄 테니 방금 받은 인증 숫자를 불러 주세요.",
+        "요금 정정하게 휴대폰에 뜬 확인 코드를 읽어 주면 돼요.",
+        "재배송하려면 문자에 온 숫자 여섯 개를 알려 주시면 됩니다.",
+        "계정 잠금을 풀려면 전송된 보안 코드를 그대로 보내 주세요.",
+        "당첨 확인용으로 방금 도착한 인증 번호를 말해 주십시오.",
+    ],
+    "coercive_control": [
+        "밖에서 입을 옷은 내가 골라 줄 테니 나머지는 처분해.",
+        "머리 모양이나 화장은 나한테 먼저 허락받고 바꿔.",
+        "내가 사 준 것만 입고 다른 옷은 다 내다 버려.",
+        "오늘 어디서 누굴 만날지 시간표를 나한테 승인받아.",
+        "약속 잡기 전에 상대가 누군지 전부 나에게 보고해.",
+    ],
+}
+
 PREFIXES = ["", "오늘 ", "중요한 얘기인데 ", "다시 말하지만 "]
 NORMAL_SUFFIXES = ["", " 편할 때 확인해.", "부담되면 말해 줘.", "답장은 나중에 해도 괜찮아."]
 RISK_SUFFIXES = ["", "지금 바로 해.", "거절하면 후회할 거야.", "다른 사람에게 알리면 안 돼."]
@@ -156,7 +192,11 @@ def normalize(text: str) -> str:
     return re.sub(r"[^0-9a-z가-힣]+", "", text.lower())
 
 
-def build_rows(include_v2: bool = False) -> list[dict]:
+def build_rows(include_v2: bool = False, include_v3: bool = False) -> list[dict]:
+    # v3는 v2를, v2는 v1을 누적한다 (라운드가 올라갈수록 이전 hard-case 전부 포함).
+    if include_v3:
+        include_v2 = True
+    version = "v3" if include_v3 else "v2" if include_v2 else "v1"
     rows: list[dict] = []
     groups_to_build = [
         (0, NORMAL_BASES, NORMAL_SUFFIXES),
@@ -166,6 +206,11 @@ def build_rows(include_v2: bool = False) -> list[dict]:
         groups_to_build += [
             (0, NORMAL_V2_BASES, NORMAL_SUFFIXES),
             (1, RISK_V2_BASES, RISK_SUFFIXES),
+        ]
+    if include_v3:
+        groups_to_build += [
+            (0, NORMAL_V3_BASES, NORMAL_SUFFIXES),
+            (1, RISK_V3_BASES, RISK_SUFFIXES),
         ]
     for label, groups, suffixes in groups_to_build:
         for slice_name, bases in groups.items():
@@ -178,7 +223,7 @@ def build_rows(include_v2: bool = False) -> list[dict]:
                                 "text": text,
                                 "label": label,
                                 "slice": slice_name,
-                                "source": "safe_hardcase_v2" if include_v2 else "safe_hardcase_v1",
+                                "source": f"safe_hardcase_{version}",
                             }
                         )
     unique: dict[str, dict] = {}
@@ -186,7 +231,6 @@ def build_rows(include_v2: bool = False) -> list[dict]:
         unique.setdefault(normalize(row["text"]), row)
     result = list(unique.values())
     for index, row in enumerate(result):
-        version = "v2" if include_v2 else "v1"
         row["source_id"] = f"safe_hardcase_{version}_{index:05d}"
     return result
 
@@ -207,6 +251,7 @@ def main() -> int:
         default=ROOT / "data/synthetic/safe_hardcases/train.jsonl",
     )
     parser.add_argument("--include-v2", action="store_true")
+    parser.add_argument("--include-v3", action="store_true")
     parser.add_argument(
         "--forbidden",
         type=Path,
@@ -215,7 +260,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    rows = build_rows(include_v2=args.include_v2)
+    rows = build_rows(include_v2=args.include_v2, include_v3=args.include_v3)
     forbidden = [text for path in args.forbidden for text in read_jsonl_texts(path)]
     forbidden_exact = {normalize(text) for text in forbidden}
     exact = [row["source_id"] for row in rows if normalize(row["text"]) in forbidden_exact]

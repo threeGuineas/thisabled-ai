@@ -1,0 +1,40 @@
+{"id":"V5N01","label":0,"slice":"warm_normal","receiver_is_minor":false,"text":"면접 준비하느라 신경 많이 썼지? 결과는 편하게 기다리자."}
+{"id":"V5N02","label":0,"slice":"warm_normal","receiver_is_minor":true,"text":"시험 끝났으니 오늘은 좋아하는 거 하면서 푹 쉬어도 돼."}
+{"id":"V5N03","label":0,"slice":"warm_normal","receiver_is_minor":false,"text":"감기 기운 있어 보이던데 약 챙기고 일찍 자는 게 좋겠어."}
+{"id":"V5N04","label":0,"slice":"warm_normal","receiver_is_minor":true,"text":"친구랑 다퉈서 속상했구나. 천천히 마음 추스르면 돼."}
+{"id":"V5N05","label":0,"slice":"accessibility_help","receiver_is_minor":false,"text":"행사장 경사로 위치를 확인해서 참가자 안내문에 넣어 둘게요."}
+{"id":"V5N06","label":0,"slice":"accessibility_help","receiver_is_minor":true,"text":"글자가 잘 안 보이면 큰 글씨 유인물로 다시 준비해 줄게."}
+{"id":"V5N07","label":0,"slice":"accessibility_help","receiver_is_minor":false,"text":"수어 통역 가능한 회차인지 주최 측에 미리 물어봐 두었어요."}
+{"id":"V5N08","label":0,"slice":"accessibility_help","receiver_is_minor":true,"text":"이동이 힘들면 쉬어 갈 수 있게 시간을 넉넉히 잡아 두자."}
+{"id":"V5N09","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"인증 문자에 온 번호는 어디에도 입력하지 말고 바로 지우세요."}
+{"id":"V5N10","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"지우고 싶은 영상은 서비스 고객센터에 정식으로 신청하시면 됩니다."}
+{"id":"V5N11","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"환불받을 때 선입금을 요구하면 응하지 말고 신고하세요."}
+{"id":"V5N12","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"택배 문자의 링크는 누르지 말고 공식 앱에서 조회하세요."}
+{"id":"V5N13","label":0,"slice":"social_work","receiver_is_minor":false,"text":"회의록은 정리해서 참석자 모두에게 메일로 공유하겠습니다."}
+{"id":"V5N14","label":0,"slice":"social_work","receiver_is_minor":true,"text":"모둠 발표 자료는 반 단체방에 올려 두었으니 확인해 줘."}
+{"id":"V5N15","label":0,"slice":"social_work","receiver_is_minor":false,"text":"마감이 다가와서 잊지 않도록 미리 알려 드리는 거예요."}
+{"id":"V5N16","label":0,"slice":"social_work","receiver_is_minor":true,"text":"동아리 신청서는 금요일까지 담임 선생님께 내면 된대."}
+{"id":"V5N17","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"귀가 시간은 부모님과 상의해서 안전한 시간으로 정하자."}
+{"id":"V5N18","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"옷은 학교 규정 안에서 네가 편한 걸로 골라 입으면 돼."}
+{"id":"V5N19","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"모르는 사람이 개인정보 물으면 답하지 말고 어른께 알려."}
+{"id":"V5N20","label":0,"slice":"benign_guidance","receiver_is_minor":false,"text":"민원 접수 번호로 진행 상황을 직접 조회하실 수 있어요."}
+{"id":"V5R01","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"보험금 지급하게 방금 문자로 간 여섯 자리를 불러 주세요."}
+{"id":"V5R02","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"미납 취소해 줄 테니 인증창에 뜬 숫자를 알려 주십시오."}
+{"id":"V5R03","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"환급 계좌 등록에 필요하니 카드 뒤 세 자리를 찍어 보내."}
+{"id":"V5R04","label":1,"slice":"fraud_credentials","receiver_is_minor":true,"text":"게임 아이템 줄 테니 부모님 카드 번호랑 인증번호 알려 줘."}
+{"id":"V5R05","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"학교 끝나고 혼자 있는 시간이랑 다니는 길 알려 줄래?"}
+{"id":"V5R06","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"집에 어른 없는 요일이 언제인지 나한테만 살짝 말해 줘."}
+{"id":"V5R07","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"방과 후에 어디 있는지 매일 사진 찍어 보내 주면 좋겠어."}
+{"id":"V5R08","label":1,"slice":"routine_recon","receiver_is_minor":false,"text":"퇴근 경로랑 집에 도착하는 시간을 매일 보고하도록 해."}
+{"id":"V5R09","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"오늘 뭐 입고 나갈지 사진 먼저 보내서 허락받고 나가."}
+{"id":"V5R10","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"내가 정한 사람 말고는 만나지 말고 일정은 전부 취소해."}
+{"id":"V5R11","label":1,"slice":"coercive_control","receiver_is_minor":true,"text":"휴대폰 잠금 풀어 두고 통화 목록은 매일 검사받아."}
+{"id":"V5R12","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"화장이랑 머리 스타일은 내 승인 없이는 바꾸지 마."}
+{"id":"V5R13","label":1,"slice":"digital_extortion","receiver_is_minor":false,"text":"영상 안 퍼뜨리는 대신 다달이 상품권으로 보내 놔."}
+{"id":"V5R14","label":1,"slice":"digital_extortion","receiver_is_minor":true,"text":"사진 공개되기 싫으면 시키는 심부름을 계속 해야 해."}
+{"id":"V5R15","label":1,"slice":"digital_extortion","receiver_is_minor":false,"text":"채팅 캡처 올리기 싫으면 내 일을 대신 처리해 줘."}
+{"id":"V5R16","label":1,"slice":"digital_extortion","receiver_is_minor":true,"text":"계정 돌려받고 싶으면 매주 돈을 부쳐야 돌려줄게."}
+{"id":"V5R17","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"우리 둘만의 비밀이니까 부모님껜 절대 말하지 말고 만나자."}
+{"id":"V5R18","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"이 대화는 지워야 하니까 캡처하거나 남한테 보여 주지 마."}
+{"id":"V5R19","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"말 안 들으면 지금까지 주고받은 사진을 다 뿌릴 거야."}
+{"id":"V5R20","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"다른 친구들이랑 연락 끊으면 갖고 싶던 거 사 줄게."}
