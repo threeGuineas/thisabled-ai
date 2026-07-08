@@ -87,7 +87,7 @@ docker compose exec -T app pytest -q     # 백엔드 테스트 그린 확인
 | --- | --- | --- |
 | `SAFE_FLAG_THRESHOLD` | 0.5 | P(주의+경고+긴급) ≥ τ → flagged |
 | `SAFE_FLAG_THRESHOLD_MINOR` | 0.35 | 미성년 수신자 민감 임계값 (§4.5) |
-| `SAFE_RULE_ASSIST` | 1 | 금전 사기 규칙 보조 레이어 on/off (모델 판정에 OR 결합) |
+| `SAFE_RULE_ASSIST` | 0 | 금전 사기 규칙 보조 레이어 on/off. 최신 이진 모델은 기본 비활성 |
 | `SAFE_MAX_LENGTH` | 128 | 토크나이저 max_length |
 | `TORCH_NUM_THREADS` | 2 | CPU 스레드 |
 | `MATCH_COSINE_REASON_MIN` | 0.5 | "소개 내용이 비슷해요" 사유 최소 코사인 |
