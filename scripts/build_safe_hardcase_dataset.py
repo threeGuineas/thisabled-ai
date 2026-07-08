@@ -99,6 +99,54 @@ RISK_BASES = {
     ],
 }
 
+NORMAL_V2_BASES = {
+    "financial_benign": [
+        "미납 안내 문자는 공식 고객센터에 직접 전화해서 확인하세요.",
+        "정부 지원금은 처리 비용을 먼저 요구하지 않는다고 합니다.",
+        "은행 상담 중에도 화면 공유 앱은 실행하지 마세요.",
+        "환불은 판매처 공식 앱의 주문 내역에서 신청했습니다.",
+        "부모님 카드로 결제하기 전에 반드시 허락을 받아야 해.",
+    ],
+    "benign_guidance": [
+        "귀가 시간은 가족과 상의해서 안전한 시간으로 정하자.",
+        "교복 선택은 학교 규정을 확인한 뒤 네가 편한 것으로 골라.",
+        "등하교 경로는 반 친구들과 함께 안전 지도를 만들자.",
+        "숙제하기 어려운 부분은 선생님께 도움을 요청해도 돼.",
+        "촬영된 영상 삭제는 서비스 고객센터에 정식으로 요청하세요.",
+    ],
+}
+
+RISK_V2_BASES = {
+    "fraud_credentials": [
+        "연체 취소를 위해 문자에 나온 승인 숫자를 상담원에게 말하세요.",
+        "보상금 지급 대상이니 행정 처리비를 먼저 납부하십시오.",
+        "배송비 환불을 도와줄 테니 화면 공유를 켜고 은행 앱을 여세요.",
+        "요금 오류를 고치려면 휴대폰 원격 지원 프로그램을 설치하세요.",
+        "세금 환급 계좌 등록에 필요하니 카드 뒷면 숫자를 보내 주세요.",
+    ],
+    "routine_recon": [
+        "혼자 등교하는 시간과 매일 지나가는 길을 자세히 알려 줘.",
+        "보호자가 집을 비우는 요일과 돌아오는 시간을 적어 보내.",
+        "방과 후 누구와 어디에 있는지 매일 나에게 보고해.",
+        "친구 없이 혼자 있는 장소를 지도에 표시해서 보내 줘.",
+        "학교에서 집까지 이동하는 모습을 영상으로 계속 보여 줘.",
+    ],
+    "coercive_control": [
+        "입을 옷과 외출 시간을 내가 정할 테니 토 달지 마.",
+        "머리 모양도 내 허락을 받고 바꾸고 약속은 전부 취소해.",
+        "내가 고른 옷이 아니면 밖에 나가지 못하게 할 거야.",
+        "친구를 만나는 날짜와 귀가 시간을 내가 승인해야 해.",
+        "네 일정표를 매일 보내고 허락받지 않은 곳에는 가지 마.",
+    ],
+    "digital_extortion": [
+        "녹화 영상을 삭제해 주는 대가로 매달 돈을 보내.",
+        "사진을 퍼뜨리지 않는 조건으로 내 과제를 대신 끝내.",
+        "채팅 내용을 공개하기 싫으면 매주 내가 시키는 일을 해.",
+        "카메라 영상 유포를 막으려면 정기적으로 상품권을 사 보내.",
+        "계정을 돌려받고 싶으면 내 일을 무료로 계속 도와줘.",
+    ],
+}
+
 PREFIXES = ["", "오늘 ", "중요한 얘기인데 ", "다시 말하지만 "]
 NORMAL_SUFFIXES = ["", " 편할 때 확인해.", "부담되면 말해 줘.", "답장은 나중에 해도 괜찮아."]
 RISK_SUFFIXES = ["", "지금 바로 해.", "거절하면 후회할 거야.", "다른 사람에게 알리면 안 돼."]
@@ -108,12 +156,18 @@ def normalize(text: str) -> str:
     return re.sub(r"[^0-9a-z가-힣]+", "", text.lower())
 
 
-def build_rows() -> list[dict]:
+def build_rows(include_v2: bool = False) -> list[dict]:
     rows: list[dict] = []
-    for label, groups, suffixes in (
+    groups_to_build = [
         (0, NORMAL_BASES, NORMAL_SUFFIXES),
         (1, RISK_BASES, RISK_SUFFIXES),
-    ):
+    ]
+    if include_v2:
+        groups_to_build += [
+            (0, NORMAL_V2_BASES, NORMAL_SUFFIXES),
+            (1, RISK_V2_BASES, RISK_SUFFIXES),
+        ]
+    for label, groups, suffixes in groups_to_build:
         for slice_name, bases in groups.items():
             for base in bases:
                 for prefix in PREFIXES:
@@ -124,7 +178,7 @@ def build_rows() -> list[dict]:
                                 "text": text,
                                 "label": label,
                                 "slice": slice_name,
-                                "source": "safe_hardcase_v1",
+                                "source": "safe_hardcase_v2" if include_v2 else "safe_hardcase_v1",
                             }
                         )
     unique: dict[str, dict] = {}
@@ -132,7 +186,8 @@ def build_rows() -> list[dict]:
         unique.setdefault(normalize(row["text"]), row)
     result = list(unique.values())
     for index, row in enumerate(result):
-        row["source_id"] = f"safe_hardcase_v1_{index:05d}"
+        version = "v2" if include_v2 else "v1"
+        row["source_id"] = f"safe_hardcase_{version}_{index:05d}"
     return result
 
 
@@ -151,6 +206,7 @@ def main() -> int:
         type=Path,
         default=ROOT / "data/synthetic/safe_hardcases/train.jsonl",
     )
+    parser.add_argument("--include-v2", action="store_true")
     parser.add_argument(
         "--forbidden",
         type=Path,
@@ -159,7 +215,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    rows = build_rows()
+    rows = build_rows(include_v2=args.include_v2)
     forbidden = [text for path in args.forbidden for text in read_jsonl_texts(path)]
     forbidden_exact = {normalize(text) for text in forbidden}
     exact = [row["source_id"] for row in rows if normalize(row["text"]) in forbidden_exact]
