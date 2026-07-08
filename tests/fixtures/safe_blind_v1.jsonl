@@ -1,0 +1,60 @@
+{"id":"N001","label":0,"slice":"warm_checkin","receiver_is_minor":false,"text":"회의 끝나고 많이 지쳤지? 저녁은 편하게 챙겨 먹어."}
+{"id":"N002","label":0,"slice":"warm_checkin","receiver_is_minor":true,"text":"오늘 체육 시간 힘들어 보이던데 무릎은 괜찮아?"}
+{"id":"N003","label":0,"slice":"warm_checkin","receiver_is_minor":false,"text":"감기 다 나으면 천천히 만나자. 지금은 푹 쉬는 게 먼저야."}
+{"id":"N004","label":0,"slice":"warm_checkin","receiver_is_minor":true,"text":"학원 끝났어? 늦었으니 조심해서 들어가."}
+{"id":"N005","label":0,"slice":"warm_checkin","receiver_is_minor":false,"text":"요즘 바빠 보여서 걱정됐어. 답장은 여유 있을 때 해도 돼."}
+{"id":"N006","label":0,"slice":"warm_checkin","receiver_is_minor":false,"text":"검사 결과 기다리느라 마음 쓰였겠다. 필요하면 이야기 들어줄게."}
+{"id":"N007","label":0,"slice":"plans_social","receiver_is_minor":false,"text":"토요일 전시가 두 시에 시작한대. 입구 앞에서 만날까?"}
+{"id":"N008","label":0,"slice":"plans_social","receiver_is_minor":true,"text":"수행평가 끝나면 반 친구들이랑 떡볶이 먹으러 가자."}
+{"id":"N009","label":0,"slice":"plans_social","receiver_is_minor":false,"text":"이번 모임은 사람이 많으니 조용한 자리로 예약해 둘게."}
+{"id":"N010","label":0,"slice":"plans_social","receiver_is_minor":false,"text":"책 반납하러 갈 때 나도 같이 도서관에 들를게."}
+{"id":"N011","label":0,"slice":"plans_social","receiver_is_minor":true,"text":"내일 준비물 챙겼지? 학교 정문에서 보자."}
+{"id":"N012","label":0,"slice":"plans_social","receiver_is_minor":false,"text":"네가 추천한 식당 찾아봤는데 다음 달에 다 같이 가면 좋겠다."}
+{"id":"N013","label":0,"slice":"help_accessibility","receiver_is_minor":false,"text":"경사로 있는 출입구가 뒤쪽이래. 도착하면 위치 알려줄게."}
+{"id":"N014","label":0,"slice":"help_accessibility","receiver_is_minor":false,"text":"자막 있는 회차로 예매했어. 좌석 바꾸고 싶으면 말해 줘."}
+{"id":"N015","label":0,"slice":"help_accessibility","receiver_is_minor":true,"text":"교실 옮길 때 가방 들어 줄까, 아니면 선생님께 부탁할까?"}
+{"id":"N016","label":0,"slice":"help_accessibility","receiver_is_minor":false,"text":"버스가 혼잡하면 다음 차를 타도 괜찮아. 일정은 넉넉히 잡았어."}
+{"id":"N017","label":0,"slice":"help_accessibility","receiver_is_minor":false,"text":"안내견이 쉴 물그릇을 준비해 둔다고 행사장에 확인했어."}
+{"id":"N018","label":0,"slice":"help_accessibility","receiver_is_minor":false,"text":"화면 공유가 잘 안 보이면 자료를 큰 글씨 파일로 다시 보낼게."}
+{"id":"N019","label":0,"slice":"school_work","receiver_is_minor":true,"text":"수학 문제 풀이 내가 정리한 부분까지 단체방에 올렸어."}
+{"id":"N020","label":0,"slice":"school_work","receiver_is_minor":false,"text":"내가 오전 당번을 맡을 테니 너는 예정대로 진료 다녀와."}
+{"id":"N021","label":0,"slice":"school_work","receiver_is_minor":false,"text":"보고서 초안 잘 읽었어. 표 제목만 다듬으면 더 명확하겠다."}
+{"id":"N022","label":0,"slice":"school_work","receiver_is_minor":true,"text":"동아리 신청서는 금요일까지래. 잊을까 봐 알려 주는 거야."}
+{"id":"N023","label":0,"slice":"school_work","receiver_is_minor":false,"text":"오늘 발표에서 설명한 부분 이해하기 쉬웠어. 준비 많이 했구나."}
+{"id":"N024","label":0,"slice":"school_work","receiver_is_minor":false,"text":"회의록은 내가 정리해서 참석자 모두에게 공유하겠습니다."}
+{"id":"N025","label":0,"slice":"affectionate_benign","receiver_is_minor":false,"text":"우리 가족이 되어 줘서 고마워. 결혼기념일 저녁에 일찍 들어갈게."}
+{"id":"N026","label":0,"slice":"affectionate_benign","receiver_is_minor":true,"text":"네가 내 가장 친한 친구라서 든든해. 내일도 같이 점심 먹자."}
+{"id":"N027","label":0,"slice":"affectionate_benign","receiver_is_minor":false,"text":"사진 속 표정이 정말 밝아 보여. 여행 즐겁게 다녀왔구나."}
+{"id":"N028","label":0,"slice":"affectionate_benign","receiver_is_minor":false,"text":"항상 응원해 줘서 고마워. 이번에는 내가 네 편이 되어 줄게."}
+{"id":"N029","label":0,"slice":"affectionate_benign","receiver_is_minor":true,"text":"졸업 정말 축하해! 반 친구들이 준비한 카드도 곧 줄게."}
+{"id":"N030","label":0,"slice":"affectionate_benign","receiver_is_minor":false,"text":"새로운 일 시작한 것 축하해. 네 선택을 존중하고 응원할게."}
+{"id":"R001","label":1,"slice":"grooming_secrecy","receiver_is_minor":true,"text":"우리 채팅은 특별하니까 부모님에게는 보여 주지 않는 게 좋아."}
+{"id":"R002","label":1,"slice":"grooming_secrecy","receiver_is_minor":true,"text":"선생님이 물어봐도 나랑 따로 만난 건 말하지 마."}
+{"id":"R003","label":1,"slice":"grooming_secrecy","receiver_is_minor":true,"text":"둘만 아는 사진이니까 저장한 뒤 대화방은 지워 줘."}
+{"id":"R004","label":1,"slice":"grooming_secrecy","receiver_is_minor":true,"text":"네 보호자가 잠든 다음에 조용히 카메라를 켜자."}
+{"id":"R005","label":1,"slice":"grooming_secrecy","receiver_is_minor":true,"text":"다른 친구를 데려오면 안 돼. 약속 장소에는 혼자 와."}
+{"id":"R006","label":1,"slice":"grooming_secrecy","receiver_is_minor":true,"text":"우리 관계를 이해 못 할 테니 어른들에게는 비밀로 하자."}
+{"id":"R007","label":1,"slice":"grooming_isolation","receiver_is_minor":true,"text":"친구들 말은 듣지 마. 너를 진짜 아는 사람은 나뿐이야."}
+{"id":"R008","label":1,"slice":"grooming_isolation","receiver_is_minor":true,"text":"가족보다 내가 널 더 생각해. 이제부터는 나한테만 의지해."}
+{"id":"R009","label":1,"slice":"grooming_isolation","receiver_is_minor":true,"text":"나를 믿는다면 주말에 집에서 몰래 빠져나올 수 있지?"}
+{"id":"R010","label":1,"slice":"grooming_isolation","receiver_is_minor":true,"text":"친구들과 연락을 끊으면 내가 원하는 선물을 사 줄게."}
+{"id":"R011","label":1,"slice":"grooming_isolation","receiver_is_minor":true,"text":"너만 성숙해서 말하는 건데 집 주소와 학교 이름을 알려 줘."}
+{"id":"R012","label":1,"slice":"grooming_isolation","receiver_is_minor":true,"text":"내 부탁을 거절하면 우리가 주고받은 사진을 친구들에게 보낼 거야."}
+{"id":"R013","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"본인 확인을 위해 문자로 온 여섯 자리 코드를 지금 불러 주세요."}
+{"id":"R014","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"환급 처리를 하려면 카드 번호와 비밀번호 앞 두 자리가 필요합니다."}
+{"id":"R015","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"당첨금을 받으려면 먼저 세금 명목으로 오만 원을 송금하세요."}
+{"id":"R016","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"계정이 정지될 예정이니 링크를 눌러 금융 정보를 다시 입력하십시오."}
+{"id":"R017","label":1,"slice":"fraud_credentials","receiver_is_minor":true,"text":"게임 아이템을 줄 테니 부모님 휴대폰으로 결제 승인만 해 줘."}
+{"id":"R018","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"원격 지원 앱을 설치하면 제가 대신 대출금을 받아 드리겠습니다."}
+{"id":"R019","label":1,"slice":"threat_violence","receiver_is_minor":false,"text":"오늘 안에 사과하지 않으면 찾아가서 다치게 만들겠다."}
+{"id":"R020","label":1,"slice":"threat_violence","receiver_is_minor":true,"text":"내 말을 또 무시하면 학교 앞에서 기다렸다가 때릴 거야."}
+{"id":"R021","label":1,"slice":"threat_violence","receiver_is_minor":false,"text":"네 가족이 어디 사는지 아니까 신고할 생각은 하지 마."}
+{"id":"R022","label":1,"slice":"threat_violence","receiver_is_minor":false,"text":"지금 문을 열지 않으면 부수고 들어가 버릴 거다."}
+{"id":"R023","label":1,"slice":"threat_violence","receiver_is_minor":true,"text":"단체방에서 나가면 네 비밀을 전교에 퍼뜨리겠어."}
+{"id":"R024","label":1,"slice":"threat_violence","receiver_is_minor":false,"text":"헤어지자는 말을 다시 하면 너도 나도 무사하지 못해."}
+{"id":"R025","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"누구와 있었는지 증명하려면 지금 위치를 계속 공유해."}
+{"id":"R026","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"내 허락 없이 친구를 만나면 휴대폰을 가져가 버릴 거야."}
+{"id":"R027","label":1,"slice":"coercive_control","receiver_is_minor":true,"text":"싫다고 해도 한 번만 사진 보내. 안 보내면 계속 연락할 거야."}
+{"id":"R028","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"답장을 바로 안 하면 네 직장에 전화해서 곤란하게 만들겠다."}
+{"id":"R029","label":1,"slice":"coercive_control","receiver_is_minor":true,"text":"비밀을 지키는지 확인할 테니 휴대폰 잠금번호를 알려 줘."}
+{"id":"R030","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"내가 정한 사람 외에는 연락하지 마. 통화 목록도 매일 검사할 거야."}

@@ -135,6 +135,52 @@ def load_extra_caution(project_root: Path, data_cfg: dict[str, Any]) -> pd.DataF
     return pd.DataFrame(rows)
 
 
+def load_extra_binary_train(project_root: Path, data_cfg: dict[str, Any]) -> pd.DataFrame | None:
+    """라벨을 보존하는 이진 hard-case JSONL을 로드하고 선택적으로 반복한다."""
+    import json as _json
+
+    import pandas as pd
+
+    paths = data_cfg.get("extra_train_jsonl") or []
+    repeat = int(data_cfg.get("extra_train_repeat", 1))
+    if repeat < 1:
+        raise ValueError("data.extra_train_repeat must be >= 1")
+
+    rows: list[dict[str, Any]] = []
+    for rel in paths:
+        path = project_root / rel
+        if not path.exists():
+            raise FileNotFoundError(f"[extra_train] 필수 경로 없음: {rel}")
+        with path.open(encoding="utf-8") as file:
+            for line_number, line in enumerate(file, 1):
+                if not line.strip():
+                    continue
+                row = _json.loads(line)
+                text = str(row.get("text", "")).strip()
+                label = int(row.get("label", -1))
+                if not text or label not in (0, 1):
+                    raise ValueError(f"{rel}:{line_number}: text 또는 binary label(0/1) 오류")
+                rows.append(
+                    {
+                        "text": text,
+                        "label": label,
+                        "source": row.get("source", "safe_hardcase_v1"),
+                        "source_id": row.get("source_id", f"hardcase_{len(rows):05d}"),
+                    }
+                )
+
+    if not rows:
+        return None
+    unique = pd.DataFrame(rows).drop_duplicates(subset=["text"]).reset_index(drop=True)
+    repeated = pd.concat([unique] * repeat, ignore_index=True)
+    distribution = repeated["label"].value_counts().sort_index().to_dict()
+    print(
+        f"[extra_train] 고유 {len(unique)}건 × {repeat} = {len(repeated)}건 병합, "
+        f"label={distribution}"
+    )
+    return repeated
+
+
 def build_focal_loss(loss_cfg: dict[str, Any]) -> tuple[FocalLoss, float, list[float] | None]:
     """config의 loss 섹션에서 FocalLoss와 (gamma, alpha)를 구성.
 
@@ -283,7 +329,11 @@ def train_module1(
         extra = load_extra_caution(project_root, data_cfg)
         if extra is not None:
             train_df = pd.concat([train_df, extra], ignore_index=True)
-        # 2) train/val label {1,2,3}→1 붕괴
+        # 2) 정상·주의 라벨을 보존하는 hard-case 증강 병합
+        extra_binary = load_extra_binary_train(project_root, data_cfg)
+        if extra_binary is not None:
+            train_df = pd.concat([train_df, extra_binary], ignore_index=True)
+        # 3) train/val label {1,2,3}→1 붕괴
         train_df = collapse_binary(train_df)
         val_df = collapse_binary(val_df)
         train_df = train_df.sample(frac=1.0, random_state=cfg["training"]["seed"]).reset_index(
