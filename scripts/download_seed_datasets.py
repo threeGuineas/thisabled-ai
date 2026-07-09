@@ -8,8 +8,16 @@ from __future__ import annotations
 
 import hashlib
 import sys
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
+
+# raw/media.githubusercontent.com 은 Colab 공유 IP에서 429(Too Many Requests)를 자주 던진다.
+# 단발 요청이면 그 한 번에 전체 파이프라인이 죽으므로 재시도+백오프로 견딘다.
+_TRANSIENT_HTTP = {429, 500, 502, 503, 504}
+_UA = "Mozilla/5.0 (thisabled-ai seed fetch)"
+_MAX_RETRIES = 5
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
@@ -36,10 +44,31 @@ def _download(url: str, dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".part")
     print(f"  -> {url}")
-    with urllib.request.urlopen(url) as r, tmp.open("wb") as f:
-        while chunk := r.read(1 << 20):
-            f.write(chunk)
-    tmp.rename(dest)
+    for attempt in range(1, _MAX_RETRIES + 1):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": _UA})
+            with urllib.request.urlopen(req, timeout=60) as r, tmp.open("wb") as f:
+                while chunk := r.read(1 << 20):
+                    f.write(chunk)
+            tmp.rename(dest)
+            return
+        except urllib.error.HTTPError as e:
+            tmp.unlink(missing_ok=True)
+            if e.code not in _TRANSIENT_HTTP or attempt == _MAX_RETRIES:
+                raise
+            retry_after = e.headers.get("Retry-After") if e.headers else None
+            wait = (
+                int(retry_after) if (retry_after and retry_after.isdigit()) else min(60, 2**attempt)
+            )
+            print(f"     HTTP {e.code}, retry {attempt}/{_MAX_RETRIES} after {wait}s")
+            time.sleep(wait)
+        except (urllib.error.URLError, TimeoutError) as e:
+            tmp.unlink(missing_ok=True)
+            if attempt == _MAX_RETRIES:
+                raise
+            wait = min(60, 2**attempt)
+            print(f"     {type(e).__name__}, retry {attempt}/{_MAX_RETRIES} after {wait}s")
+            time.sleep(wait)
 
 
 def fetch_unsmile() -> None:
