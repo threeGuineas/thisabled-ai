@@ -79,7 +79,7 @@ SAFE_RULE_ASSIST=0
 ```
 
 - `/health` 가 실제 로드된 커밋을 `revision` 으로 보고(코드가 `SAFE_MODEL_REVISION` 소비). 배포 후 이 값이 새 SHA 와 일치하는지 확인.
-- 현행 프로덕션 revision: `79bbd16e2ea9a5c9133fb01c6f8c1c09671283aa`, 임계값 0.85/0.69.
+- 배포 대상 revision(v4_r1, HF main): `3e9c0b800661db9ce099782a76fbe181e8b23ab5`, 임계값 0.85/0.69. (직전 프로덕션 79bbd16=v2_r1. 서빙 갱신·재시작 후 라이브 전환.)
 
 ## 6. 새 라운드 추가 체크리스트
 
