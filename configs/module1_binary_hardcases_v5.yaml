@@ -1,0 +1,31 @@
+model:
+  name: "beomi/KcELECTRA-base-v2022"
+  num_labels: 2
+  max_length: 128
+  dropout: 0.1
+  checkpoint_dir: "models/checkpoints/module1_binary_hardcases_v5"
+data:
+  binary: true
+  extra_caution_jsonl: []
+  extra_train_jsonl: ["data/synthetic/safe_hardcases_v5/train.jsonl"]
+  extra_train_repeat: 1
+training:
+  batch_size: 32
+  eval_batch_size: 64
+  num_epochs: 3
+  lr: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  grad_accum_steps: 1
+  fp16: true
+  seed: 42
+loss:
+  type: "ce"
+  focal_gamma: 0.0
+  alpha: [1.0, 1.0]
+stacking:
+  enabled: false
+paths:
+  checkpoint_dir: "models/checkpoints/module1_binary_hardcases_v5"
+  report_dir: "reports/validation_reports/module1_binary_hardcases_v5"
+labels: ["정상", "주의"]

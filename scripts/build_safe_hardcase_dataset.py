@@ -216,6 +216,31 @@ RISK_V4_BASES = {
     ],
 }
 
+# v5: blind v6 fresh 회귀에서 남은 오판 정조준.
+#  - FP: 1:1 정서적 지지 정상문을 위험으로 오판(warm_normal, p=0.997) → benign 지지문 보강
+#  - 경계 강화: 지지하는 말투지만 고립·비밀을 요구하는 grooming hard-negative 대비
+# 지지문은 밖(가족·친구·선생님)을 향하거나 비밀·독점이 없어 안전, hard-negative는 비밀·
+# 고립을 요구해 위험 — 이 대조로 "지지=안전, 고립·비밀=위험" 경계를 학습시킨다.
+NORMAL_V5_BASES = {
+    "warm_support": [
+        "많이 힘들었겠다. 얘기하고 싶을 때 언제든 편하게 말해.",
+        "혼자 감당하지 말고 가족이나 친구한테도 기대도 괜찮아.",
+        "네 잘못이 아니야. 선생님이나 주변 어른께 도움 청해도 돼.",
+        "슬플 땐 울어도 되고 쉬어도 돼. 네 마음이 제일 중요해.",
+        "곁에서 응원할게. 너를 아끼는 사람들이 주위에 많아.",
+        "따뜻한 거 먹고 푹 쉬면 마음이 조금은 나아질 거야.",
+    ],
+}
+
+RISK_V5_BASES = {
+    "grooming_threat": [
+        "힘들지? 부모님껜 말하지 말고 나한테만 다 털어놔.",
+        "너를 제일 아끼는 건 나뿐이야. 다른 어른들은 믿지 마.",
+        "우리 사이는 비밀이니까 친구들한테 절대 알리지 마.",
+        "속상하면 다른 사람 말고 나한테만 몰래 연락해.",
+    ],
+}
+
 PREFIXES = ["", "오늘 ", "중요한 얘기인데 ", "다시 말하지만 "]
 NORMAL_SUFFIXES = ["", " 편할 때 확인해.", "부담되면 말해 줘.", "답장은 나중에 해도 괜찮아."]
 RISK_SUFFIXES = ["", "지금 바로 해.", "거절하면 후회할 거야.", "다른 사람에게 알리면 안 돼."]
@@ -226,14 +251,29 @@ def normalize(text: str) -> str:
 
 
 def build_rows(
-    include_v2: bool = False, include_v3: bool = False, include_v4: bool = False
+    include_v2: bool = False,
+    include_v3: bool = False,
+    include_v4: bool = False,
+    include_v5: bool = False,
 ) -> list[dict]:
-    # 라운드는 누적된다: v4 ⊇ v3 ⊇ v2 ⊇ v1 (이전 hard-case 전부 포함).
+    # 라운드는 누적된다: v5 ⊇ v4 ⊇ v3 ⊇ v2 ⊇ v1 (이전 hard-case 전부 포함).
+    if include_v5:
+        include_v4 = True
     if include_v4:
         include_v3 = True
     if include_v3:
         include_v2 = True
-    version = "v4" if include_v4 else "v3" if include_v3 else "v2" if include_v2 else "v1"
+    version = (
+        "v5"
+        if include_v5
+        else "v4"
+        if include_v4
+        else "v3"
+        if include_v3
+        else "v2"
+        if include_v2
+        else "v1"
+    )
     rows: list[dict] = []
     groups_to_build = [
         (0, NORMAL_BASES, NORMAL_SUFFIXES),
@@ -253,6 +293,11 @@ def build_rows(
         groups_to_build += [
             (0, NORMAL_V4_BASES, NORMAL_SUFFIXES),
             (1, RISK_V4_BASES, RISK_SUFFIXES),
+        ]
+    if include_v5:
+        groups_to_build += [
+            (0, NORMAL_V5_BASES, NORMAL_SUFFIXES),
+            (1, RISK_V5_BASES, RISK_SUFFIXES),
         ]
     for label, groups, suffixes in groups_to_build:
         for slice_name, bases in groups.items():
@@ -295,6 +340,7 @@ def main() -> int:
     parser.add_argument("--include-v2", action="store_true")
     parser.add_argument("--include-v3", action="store_true")
     parser.add_argument("--include-v4", action="store_true")
+    parser.add_argument("--include-v5", action="store_true")
     parser.add_argument(
         "--forbidden",
         type=Path,
@@ -304,7 +350,10 @@ def main() -> int:
     args = parser.parse_args()
 
     rows = build_rows(
-        include_v2=args.include_v2, include_v3=args.include_v3, include_v4=args.include_v4
+        include_v2=args.include_v2,
+        include_v3=args.include_v3,
+        include_v4=args.include_v4,
+        include_v5=args.include_v5,
     )
     forbidden = [text for path in args.forbidden for text in read_jsonl_texts(path)]
     forbidden_exact = {normalize(text) for text in forbidden}
