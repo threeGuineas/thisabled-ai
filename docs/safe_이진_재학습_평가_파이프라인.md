@@ -51,7 +51,7 @@ hard-case base 문장 ──► build_safe_hardcase_dataset.py ──► data/sy
 4. blind 원문은 **train 에 절대 병합하지 않는다**. hard-case·train 과 exact+near(0.8) 중복 0 을 노트북에서 단언한다.
 5. 한계: blind 도 저자 생성 합성셋이라 *패턴 일반화*를 측정하며 완전 독립 실데이터가 아니다. 실데이터 회귀는 aihub/beep holdout 이 담당.
 
-blind 이력: v1~v5 소비 완료(dev 회귀셋). 현재 fresh = **[tests/fixtures/safe_blind_v6.jsonl](../tests/fixtures/safe_blind_v6.jsonl)** ([notebooks/10_iterative_hardcase_retrain_v4.ipynb](../notebooks/10_iterative_hardcase_retrain_v4.ipynb)에서 소비).
+blind 이력: v1~v6 소비 완료(dev 회귀셋). 현재 fresh = **[tests/fixtures/safe_blind_v7.jsonl](../tests/fixtures/safe_blind_v7.jsonl)** ([notebooks/11_iterative_hardcase_retrain_v5.ipynb](../notebooks/11_iterative_hardcase_retrain_v5.ipynb)에서 소비).
 
 ## 4. 재학습·게이트 (노트북 셀 순서)
 
