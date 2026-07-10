@@ -21,6 +21,8 @@ import csv
 import json
 import re
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 import pandas as pd
@@ -33,6 +35,7 @@ SYNTH_DIR = ROOT / "data" / "synthetic"
 EVAL_DIR = ROOT / "data" / "eval"
 FIXTURE_DIR = ROOT / "tests" / "fixtures"
 DKTC_CSV = ROOT / "data" / "raw" / "dktc" / "train.csv"
+DKTC_URL = "https://raw.githubusercontent.com/tunib-ai/DKTC/main/data/train.csv"
 
 DEDUP_THRESHOLD = 0.8
 KMHAS_CAP = 15000  # 79k 전량은 base(~48k)를 압도 → 균형 위해 이진 층화 샘플
@@ -95,12 +98,40 @@ def dedup_report(df: pd.DataFrame, forbidden: pd.Series, name: str) -> pd.DataFr
 
 
 # ---------- DKTC ----------
+def ensure_dktc_csv() -> Path:
+    """공개 DKTC train CSV를 필요할 때만 내려받고 필수 스키마를 검증한다."""
+    if DKTC_CSV.exists() and DKTC_CSV.stat().st_size > 0:
+        print(f"[dktc] 기존 원본 사용: {DKTC_CSV.relative_to(ROOT)}")
+        return DKTC_CSV
+
+    DKTC_CSV.parent.mkdir(parents=True, exist_ok=True)
+    temporary = DKTC_CSV.with_suffix(".csv.part")
+    print(f"[dktc] 다운로드: {DKTC_URL}")
+    try:
+        request = urllib.request.Request(DKTC_URL, headers={"User-Agent": "thisabled-ai/SAFE-v6"})
+        with (
+            urllib.request.urlopen(request, timeout=120) as response,
+            temporary.open("wb") as output,
+        ):
+            while chunk := response.read(1 << 20):
+                output.write(chunk)
+        columns = set(pd.read_csv(temporary, nrows=1).columns)
+        required = {"idx", "class", "conversation"}
+        if missing := required - columns:
+            raise ValueError(f"DKTC CSV 필수 열 누락: {sorted(missing)}")
+        temporary.replace(DKTC_CSV)
+    except (OSError, urllib.error.URLError, ValueError, pd.errors.ParserError) as exc:
+        temporary.unlink(missing_ok=True)
+        raise RuntimeError(f"DKTC 다운로드/검증 실패 ({DKTC_URL}): {exc}") from exc
+
+    print(f"[dktc] 다운로드 완료: {DKTC_CSV.stat().st_size:,} bytes")
+    return DKTC_CSV
+
+
 def build_dktc(
     window: int = 3, stride: int = 2, per_conv: int = 4, min_words: int = 6
 ) -> pd.DataFrame:
-    if not DKTC_CSV.exists():
-        raise FileNotFoundError(f"DKTC 없음: {DKTC_CSV} (먼저 다운로드)")
-    df = pd.read_csv(DKTC_CSV)
+    df = pd.read_csv(ensure_dktc_csv())
     rows: list[dict] = []
     for _, r in df.iterrows():
         conv_idx = int(r["idx"])
