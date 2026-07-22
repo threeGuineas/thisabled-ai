@@ -9,6 +9,11 @@
 | safety_server (9001) | `POST /analyze {text, receiver_is_minor}` → `{verdict: safe\|flagged}` | KcELECTRA 4-class (`module1_ce`) |
 | match_server (9002) | `POST /score {me, candidates}` → `{results:[{user_id, score, reasons}]}` | ko-sroberta 임베딩 + LambdaMART |
 
+MATCH는 기존 `user_id,bio,tags,age_band,ui_mode` 5필드 요청을 그대로 지원한다. 입력
+파이프라인 v2에서는 `age_years`, `authored_items`, `liked_items`와 후보별 선택
+`relationship`을 추가할 수 있다. 알 수 없는 필드는 거부하며 검증 오류에는 입력값을 되돌리지
+않는다. 상세 계약은 `docs/matching_schema.md`를 따른다.
+
 ## 로컬 실행 (Docker 없이)
 
 ```bash
@@ -81,6 +86,28 @@ docker compose exec -T app pytest -q     # 백엔드 테스트 그린 확인
 포트·서비스명·계약이 mock과 동일하므로 이것으로 끝. 되돌리려면 원래 mock 설정으로 복구
 (§18.3 장애 시연·영상 촬영 폴백용으로 mock 설정을 지우지 말 것).
 
+## MATCH 랭커 스키마 (legacy-v1 ↔ match-input-v2)
+
+MATCH는 두 랭커 스키마를 `MATCH_FEATURE_SCHEMA`로 전환한다. 기본은 `legacy-v1`(구형 3열
+pickle + UI모드→f_dis_match 투영 shim). `match-input-v2`는 재학습된 15열 LambdaMART를
+그대로 쓰며, 모델이 이미 태그·나이·콘텐츠·공통친구를 학습했으므로 **서빙에서 tag/age를
+재가산하지 않고 순수 모델 점수로 정렬**한다(`MATCH_W_*` 미사용).
+
+v2 배포는 HF revision을 고정한다(train/serve 일관성):
+
+```yaml
+  match-model:
+    environment:
+      MATCH_FEATURE_SCHEMA: match-input-v2
+      MATCH_HF_REPO: soyuncj/module2
+      MATCH_HF_FILE: module2_lambdamart_v2.pkl
+      MATCH_HF_REVISION: ecb31a428e74dfc393617a6a4a95ecc4cb7e6d67
+      HF_TOKEN: ${HF_TOKEN}   # 해당 repo read 토큰
+```
+
+**롤백**: `MATCH_FEATURE_SCHEMA: legacy-v1`로 바꾸고(또는 env 제거) 재기동하면 구형
+pickle+shim 경로로 즉시 복귀한다. legacy 자산은 유지한다.
+
 ## 운영 설정값 (env)
 
 | 변수 | 기본 | 의미 |
@@ -91,12 +118,22 @@ docker compose exec -T app pytest -q     # 백엔드 테스트 그린 확인
 | `SAFE_MAX_LENGTH` | 128 | 토크나이저 max_length |
 | `TORCH_NUM_THREADS` | 2 | CPU 스레드 |
 | `MATCH_COSINE_REASON_MIN` | 0.5 | "소개 내용이 비슷해요" 사유 최소 코사인 |
-| `MATCH_W_MODEL` / `MATCH_W_TAG` / `MATCH_W_AGE` | 0.5 / 0.3 / 0.2 | 점수 블렌드 가중치 (모델·태그 교집합·연령대 일치) |
+| `MATCH_CONFIG_PATH` | `configs/module2_matching.yaml` | 입력 정책·TAG-01·특성 스키마 설정 파일 |
+| `MATCH_ALLOWED_TAG_IDS` | 설정 파일의 43개 코드 | 쉼표로 구분한 TAG-01 허용 코드 전체 재정의 |
+| `MATCH_FEATURE_SCHEMA` | `legacy-v1` | 랭커 스키마 `legacy-v1`\|`match-input-v2`. 전환·롤백 스위치 |
+| `MATCH_HF_FILE` | `module2_lambdamart_embedding.pkl` | HF에서 받을 모델 파일명 (v2는 `module2_lambdamart_v2.pkl`) |
+| `MATCH_HF_REVISION` | (최신) | 고정할 HF commit hash. v2 배포는 반드시 지정 |
+| `MATCH_W_MODEL` / `MATCH_W_TAG` / `MATCH_W_AGE` | 0.5 / 0.3 / 0.2 | legacy-v1 점수 블렌드 가중치 (v2는 미사용 — 순수 모델 점수) |
+| `MATCH_AUTHORED_LOOKBACK_DAYS` / `MATCH_LIKED_LOOKBACK_DAYS` | 90 / 90 | 작성물·좋아요 분석 기간 |
+| `MATCH_MAX_AUTHORED_ITEMS` / `MATCH_MAX_LIKED_ITEMS` | 100 / 100 | 사용자별 최대 콘텐츠 수 |
+| `MATCH_MAX_CONTENT_CHARS` | 2000 | 콘텐츠 한 건의 임베딩 입력 문자 상한 |
+| `MATCH_MAX_CANDIDATES` | 200 | `/score` 요청당 후보 상한 |
+| `MATCH_EMBEDDING_BATCH_SIZE` | 64 | Sentence-BERT 인코딩 배치 크기 |
+| `MATCH_CONTENT_REASON_MIN` | 0.65 | 콘텐츠 유사 추천 사유 cosine 하한 |
 | `SAFE_MODEL_DIR` | 로컬 경로 | 로컬 체크포인트 경로 또는 HF repo id |
 | `SAFE_MODEL_REVISION` | (없음=main) | HF repo id 사용 시 로드할 커밋 SHA 고정. `/health.revision`으로 실제 로드값 확인 |
 | `MATCH_HF_REPO` | (없음) | 로컬 pkl 부재 시 다운로드할 HF repo id |
 | `HF_TOKEN` | (없음) | HF private repo read 토큰 |
-| `MATCH_W_MODEL` / `MATCH_W_TAG` / `MATCH_W_AGE` | 0.5 / 0.3 / 0.2 | 점수 블렌드 가중치 (모델·태그 교집합·연령대 일치) |
 
 ## 설계 메모 (보고서 반영)
 
@@ -114,6 +151,12 @@ docker compose exec -T app pytest -q     # 백엔드 테스트 그린 확인
 - **f_dis_match 대응**: 학습의 disability_type 일치 → 서빙에선 ui_mode 일치.
   서버 내부 특성 전용, 추천 사유로 노출 금지 (MATCH-04).
 - **bio 폴백**: bio가 비면 관심사 태그 문자열로 임베딩 (MATCH-02-8).
+- **입력 파이프라인 v2**: 작성물·좋아요는 별도 집계 벡터로 보존하고, 삭제·접근 불가·차단
+  작성자의 콘텐츠는 encoder 호출 전에 제외한다. 후보 관계가 요청에 포함되면 차단·친구·최근
+  거절·미성년/성인을 모델 서버에서도 재검사한다.
+- **레거시 모델 투영**: 현재 pickle은 3열만 학습했으므로 프로필 raw SBERT의
+  `f_cosine,f_l2`와 내부 `ui_mode` 일치값만 구형 `f_dis_match` 열에 전달한다. v2 특성을
+  LambdaMART 점수에 직접 쓰려면 새 스키마로 재학습해야 한다.
 - **MATCH 점수 블렌드**: 학습 입력(지역·나이·장애유형이 명시된 템플릿 자기소개)과
   서빙 계약 입력(bio+tags+age_band+ui_mode) 사이에 스키마 드리프트가 있음 — 학습 라벨의
   주 결정 변수(지역)가 서빙 입력에 없고, 나이도 텍스트에서 사라짐(스모크에서 상이한 두

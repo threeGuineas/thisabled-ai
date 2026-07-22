@@ -73,6 +73,9 @@ serving:
   max_reasons: 4
 
 features:
+  # 서빙 스키마 스위치. legacy-v1(구형 3열 pickle + 투영 shim) | match-input-v2(신규 15열).
+  # 환경변수 MATCH_FEATURE_SCHEMA로 재정의(롤백은 이 값만 바꿔 재기동).
+  feature_schema: "legacy-v1"
   # legacy-v1은 현재 배포된 pickle에만 투영한다.
   legacy_model_features: ["f_cosine", "f_l2", "f_dis_match"]
   # match-input-v2 재학습 후보. 기존 pickle에는 전달하지 않는다.

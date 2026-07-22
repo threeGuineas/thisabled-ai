@@ -216,6 +216,35 @@ def test_legacy_payload_remains_compatible_and_response_is_minimal(client_and_mo
     assert set(results[0]["reasons"]).issubset(ALLOWED_RECOMMENDATION_REASONS)
 
 
+def test_v2_schema_feeds_full_features_and_uses_pure_model_score(
+    client_and_models, monkeypatch
+) -> None:
+    from serving.match_server import app as app_module
+
+    monkeypatch.setattr(app_module, "FEATURE_SCHEMA", "match-input-v2")
+    client, _encoder, ranker = client_and_models
+    response = client.post(
+        "/score",
+        json={"me": legacy_user("me"), "candidates": [legacy_user("cand")]},
+    )
+
+    assert response.status_code == 200
+    results = response.json()["results"]
+    assert len(results) == 1
+    assert set(results[0]) == {"user_id", "score", "reasons"}
+    # v2는 config v2_pair_features 15열 전체를 순서대로 랭커에 전달한다(투영 shim 없음).
+    assert ranker.seen_columns == app_module.V2_FEATURE_COLS
+    # FakeRanker가 0을 반환 → 순수 모델 점수 sigmoid(0)=0.5 (tag/age 재가산 없음).
+    assert results[0]["score"] == 0.5
+    assert set(results[0]["reasons"]).issubset(ALLOWED_RECOMMENDATION_REASONS)
+
+
+def test_health_reports_active_feature_schema(client_and_models) -> None:
+    client, _encoder, _ranker = client_and_models
+    body = client.get("/health").json()
+    assert body["feature_schema"] in {"legacy-v1", "match-input-v2"}
+
+
 def test_relationship_filtered_candidate_never_reaches_encoder_or_ranker(
     client_and_models,
 ) -> None:
