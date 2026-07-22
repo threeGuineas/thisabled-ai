@@ -1,11 +1,97 @@
 # Module ② — 사용자 호환성 매칭 (SBERT 임베딩 + LightGBM Ranker)
+input:
+  # 운영 기본값. 환경변수 MATCH_*로 서빙 시 재정의할 수 있다.
+  bio_max_chars: 300
+  max_tags: 10
+  authored_lookback_days: 90
+  liked_lookback_days: 90
+  max_authored_items: 100
+  max_liked_items: 100
+  max_content_chars: 2000
+  max_candidates: 200
+  max_tag_chars: 64
+  rejection_cooldown_days: 30
+  allowed_content_sources: ["post", "comment"]
+  allowed_ui_modes: ["visual", "hearing", "developmental"]
+  allowed_tag_ids:
+    - "walking"
+    - "hiking"
+    - "gym"
+    - "yoga"
+    - "cycling"
+    - "home_training"
+    - "mobile_game"
+    - "pc_game"
+    - "board_game"
+    - "puzzle"
+    - "listening_music"
+    - "singing"
+    - "instrument"
+    - "kpop"
+    - "trot"
+    - "movie"
+    - "drama"
+    - "ott"
+    - "animation"
+    - "reading"
+    - "webtoon"
+    - "webnovel"
+    - "writing"
+    - "drawing"
+    - "photo"
+    - "craft_diy"
+    - "knitting"
+    - "cooking"
+    - "baking"
+    - "food_tour"
+    - "cafe"
+    - "dessert"
+    - "domestic_travel"
+    - "camping"
+    - "exhibition_museum"
+    - "driving"
+    - "dog"
+    - "cat"
+    - "plant"
+    - "daily_sharing"
+    - "small_talk"
+    - "heart_sharing"
+    - "healing"
+
 embedding:
   sbert_model_name: "jhgan/ko-sroberta-multitask"
   max_seq_length: 256
   batch_size: 64
   pooling: "mean"  # mean | cls
 
+serving:
+  model_weight: 0.5
+  tag_weight: 0.3
+  age_weight: 0.2
+  content_reason_min: 0.65
+  profile_reason_min: 0.5
+  max_reasons: 4
+
 features:
+  # legacy-v1은 현재 배포된 pickle에만 투영한다.
+  legacy_model_features: ["f_cosine", "f_l2", "f_dis_match"]
+  # match-input-v2 재학습 후보. 기존 pickle에는 전달하지 않는다.
+  v2_pair_features:
+    - "f_effective_cosine"
+    - "f_profile_cosine"
+    - "f_profile_l2"
+    - "f_authored_cosine"
+    - "f_authored_available"
+    - "f_liked_cosine"
+    - "f_liked_available"
+    - "f_liked_authored_cosine"
+    - "f_tag_overlap"
+    - "f_tag_jaccard"
+    - "f_common_friend_count"
+    - "f_age_diff"
+    - "f_age_available"
+    - "f_age_band_match"
+    - "f_ui_mode_match"
   use_cosine: true
   use_l1_diff: true
   use_l2_diff: true
@@ -31,5 +117,5 @@ training:
 
 paths:
   embedding_cache: "data/processed/module2_embeddings.h5"
-  model_path: "models/checkpoints/module2/ranker.txt"
+  model_path: "models/checkpoints/module2_lambdamart_embedding.pkl"
   report_dir: "reports/validation_reports/module2"
