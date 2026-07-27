@@ -66,8 +66,7 @@ hf upload soyuncj/thisabled-match-lambdamart models/checkpoints/module2_lambdama
       context: ../thisabled-ai
       dockerfile: serving/match_server/Dockerfile
     environment:
-      MATCH_HF_REPO: soyuncj/thisabled-match-lambdamart
-      HF_TOKEN: ${HF_TOKEN}
+      HF_TOKEN: ${HF_TOKEN}   # v2 좌표(repo/file/revision/schema)는 이미지 기본값
     volumes:
       - hf_cache_match:/srv/hf-cache
     restart: unless-stopped
@@ -93,17 +92,19 @@ pickle + UI모드→f_dis_match 투영 shim). `match-input-v2`는 재학습된 1
 그대로 쓰며, 모델이 이미 태그·나이·콘텐츠·공통친구를 학습했으므로 **서빙에서 tag/age를
 재가산하지 않고 순수 모델 점수로 정렬**한다(`MATCH_W_*` 미사용).
 
-v2 배포는 HF revision을 고정한다(train/serve 일관성):
+**기본 배포는 v2다.** `serving/match_server/Dockerfile`이 아래 v2 좌표를 이미지 ENV
+기본값으로 굽고 기동 시 HF에서 revision을 고정해 받는다(train/serve 일관성). 백엔드는
+`HF_TOKEN`(해당 repo read 토큰)만 주면 된다.
 
-```yaml
-  match-model:
-    environment:
-      MATCH_FEATURE_SCHEMA: match-input-v2
-      MATCH_HF_REPO: soyuncj/module2
-      MATCH_HF_FILE: module2_lambdamart_v2.pkl
-      MATCH_HF_REVISION: ecb31a428e74dfc393617a6a4a95ecc4cb7e6d67
-      HF_TOKEN: ${HF_TOKEN}   # 해당 repo read 토큰
+```text
+MATCH_FEATURE_SCHEMA=match-input-v2
+MATCH_HF_REPO=soyuncj/module2
+MATCH_HF_FILE=module2_lambdamart_v2.pkl
+MATCH_HF_REVISION=ecb31a428e74dfc393617a6a4a95ecc4cb7e6d67
 ```
+
+**롤백**: 실행 시 `-e MATCH_FEATURE_SCHEMA=legacy-v1`(+ 구형 repo/file)로 덮거나 이전
+이미지로 되돌린다. 모델 갱신 시에는 새 revision으로 Dockerfile ENV를 바꿔 재빌드한다.
 
 **롤백**: `MATCH_FEATURE_SCHEMA: legacy-v1`로 바꾸고(또는 env 제거) 재기동하면 구형
 pickle+shim 경로로 즉시 복귀한다. legacy 자산은 유지한다.
