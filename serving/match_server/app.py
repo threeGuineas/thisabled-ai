@@ -81,11 +81,12 @@ if raw_tag_ids := os.getenv("MATCH_ALLOWED_TAG_IDS"):
 if not _configured_tag_ids:
     raise ValueError("MATCH allowed_tag_ids must not be empty")
 
+# 명시적 MATCH_MODEL_PATH가 있으면 로컬 파일을 강제한다. 없으면 config 기본 경로를 쓰되,
+# MATCH_HF_REPO가 지정되면 HF를 우선한다(스키마 전환 시 로컬 구형 파일이 가리지 않도록).
+_EXPLICIT_MODEL_PATH = os.getenv("MATCH_MODEL_PATH")
 MODEL_PATH = Path(
-    os.getenv(
-        "MATCH_MODEL_PATH",
-        str(_PATH_CONFIG.get("model_path", "models/checkpoints/module2_lambdamart_embedding.pkl")),
-    )
+    _EXPLICIT_MODEL_PATH
+    or str(_PATH_CONFIG.get("model_path", "models/checkpoints/module2_lambdamart_embedding.pkl"))
 )
 MATCH_HF_REPO = os.getenv("MATCH_HF_REPO", "")
 MATCH_HF_FILE = os.getenv("MATCH_HF_FILE", "module2_lambdamart_embedding.pkl")
@@ -157,8 +158,10 @@ _state: dict = {}
 
 
 def _resolve_model_path() -> Path:
-    if MODEL_PATH.exists():
+    # 1) 명시적 로컬 경로가 있으면 우선.
+    if _EXPLICIT_MODEL_PATH and MODEL_PATH.exists():
         return MODEL_PATH
+    # 2) HF repo가 지정되면 HF에서 받는다(기본 로컬 구형 파일이 v2 전환을 가리지 않도록).
     if MATCH_HF_REPO:
         from huggingface_hub import hf_hub_download
 
@@ -167,6 +170,9 @@ def _resolve_model_path() -> Path:
                 repo_id=MATCH_HF_REPO, filename=MATCH_HF_FILE, revision=MATCH_HF_REVISION
             )
         )
+    # 3) 그 외 config 기본 로컬 경로.
+    if MODEL_PATH.exists():
+        return MODEL_PATH
     raise FileNotFoundError(
         f"모델 없음: {MODEL_PATH} — 로컬 배치 또는 MATCH_HF_REPO(+HF_TOKEN) 설정 필요"
     )
@@ -185,6 +191,12 @@ async def lifespan(app: FastAPI):
         _state["ranker_columns"] = list(loaded.get("columns", V2_FEATURE_COLS))
     else:
         _state["ranker"] = loaded
+    # v2 스키마인데 v2 번들(열 목록 포함)이 아니면, 특성 수 불일치로 예측이 깨지기 전에 막는다.
+    if FEATURE_SCHEMA == "match-input-v2" and "ranker_columns" not in _state:
+        raise RuntimeError(
+            "MATCH_FEATURE_SCHEMA=match-input-v2 인데 로드된 모델이 v2 번들이 아닙니다. "
+            "MATCH_HF_REPO/FILE/REVISION로 v2 pickle을 가리키거나 MATCH_MODEL_PATH를 확인하세요."
+        )
     _state["sbert"] = SentenceTransformer(SBERT_NAME)
     _state["sbert"].encode(["워밍업"])
     yield
