@@ -183,7 +183,9 @@ async def lifespan(app: FastAPI):
     # 무거운 NLP 의존성은 서버 기동 시 로드하여 계약 단위 테스트와 분리한다.
     from sentence_transformers import SentenceTransformer
 
-    with open(_resolve_model_path(), "rb") as file:
+    resolved_path = _resolve_model_path()
+    _state["model_source"] = str(resolved_path)
+    with open(resolved_path, "rb") as file:
         loaded = pickle.load(file)
     # v2 pickle은 {model, columns, ...} 번들, 구형은 bare 모델이다.
     if isinstance(loaded, dict) and "model" in loaded:
@@ -398,7 +400,7 @@ async def score(body: ScoreIn):
 async def health():
     return {
         "status": "ok",
-        "model": str(MODEL_PATH),
+        "model": _state.get("model_source", str(MODEL_PATH)),
         "loaded": "ranker" in _state,
         "feature_schema": FEATURE_SCHEMA,
     }
