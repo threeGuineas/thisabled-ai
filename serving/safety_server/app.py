@@ -33,6 +33,7 @@ MODEL_DIR = Path(os.getenv("SAFE_MODEL_DIR", "models/checkpoints/module1_ce"))
 # HF repo id 사용 시 로드할 커밋을 고정 (재현성·롤백 안전). 미지정이면 main HEAD.
 # 로컬 경로 SAFE_MODEL_DIR이면 무시된다.
 MODEL_REVISION = os.getenv("SAFE_MODEL_REVISION") or None
+# 이진 정상/주의 모델 운영점. 배포별 환경변수로 재보정 가능하다.
 THRESHOLD = float(os.getenv("SAFE_FLAG_THRESHOLD", "0.5"))
 THRESHOLD_MINOR = float(os.getenv("SAFE_FLAG_THRESHOLD_MINOR", "0.35"))
 MAX_LENGTH = int(os.getenv("SAFE_MAX_LENGTH", "128"))
@@ -127,4 +128,6 @@ async def health():
         "loaded": "model" in _state,
         "num_labels": _state.get("num_labels"),
         "labels": _state.get("labels"),
+        "threshold": THRESHOLD,
+        "threshold_minor": THRESHOLD_MINOR,
     }

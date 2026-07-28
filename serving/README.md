@@ -104,18 +104,16 @@ MATCH_HF_REVISION=ecb31a428e74dfc393617a6a4a95ecc4cb7e6d67
 ```
 
 **롤백**: 실행 시 `-e MATCH_FEATURE_SCHEMA=legacy-v1`(+ 구형 repo/file)로 덮거나 이전
-이미지로 되돌린다. 모델 갱신 시에는 새 revision으로 Dockerfile ENV를 바꿔 재빌드한다.
-
-**롤백**: `MATCH_FEATURE_SCHEMA: legacy-v1`로 바꾸고(또는 env 제거) 재기동하면 구형
-pickle+shim 경로로 즉시 복귀한다. legacy 자산은 유지한다.
+이미지로 되돌리면 구형 pickle+shim 경로로 즉시 복귀한다(legacy 자산 유지). 모델 갱신
+시에는 새 revision으로 Dockerfile ENV를 바꿔 재빌드한다.
 
 ## 운영 설정값 (env)
 
 | 변수 | 기본 | 의미 |
 | --- | --- | --- |
-| `SAFE_FLAG_THRESHOLD` | 0.5 | P(주의+경고+긴급) ≥ τ → flagged |
-| `SAFE_FLAG_THRESHOLD_MINOR` | 0.35 | 미성년 수신자 민감 임계값 (§4.5) |
-| `SAFE_RULE_ASSIST` | 0 | 금전 사기 규칙 보조 레이어 on/off. 최신 이진 모델은 기본 비활성 |
+| `SAFE_FLAG_THRESHOLD` | 0.5 | 성인 운영점. 이진=P(주의), 4-class=P(주의+경고+긴급) ≥ τ → flagged |
+| `SAFE_FLAG_THRESHOLD_MINOR` | 0.35 | 미성년 수신자 민감 운영점 (§4.5) |
+| `SAFE_RULE_ASSIST` | 0 | 금전 사기 규칙 보조 레이어 on/off (OR 결합). 최신 이진 모델은 기본 비활성 |
 | `SAFE_MAX_LENGTH` | 128 | 토크나이저 max_length |
 | `TORCH_NUM_THREADS` | 2 | CPU 스레드 |
 | `MATCH_COSINE_REASON_MIN` | 0.5 | "소개 내용이 비슷해요" 사유 최소 코사인 |
@@ -132,7 +130,7 @@ pickle+shim 경로로 즉시 복귀한다. legacy 자산은 유지한다.
 | `MATCH_EMBEDDING_BATCH_SIZE` | 64 | Sentence-BERT 인코딩 배치 크기 |
 | `MATCH_CONTENT_REASON_MIN` | 0.65 | 콘텐츠 유사 추천 사유 cosine 하한 |
 | `SAFE_MODEL_DIR` | 로컬 경로 | 로컬 체크포인트 경로 또는 HF repo id |
-| `SAFE_MODEL_REVISION` | (없음=main) | HF repo id 사용 시 로드할 커밋 SHA 고정. `/health.revision`으로 실제 로드값 확인 |
+| `SAFE_MODEL_REVISION` | (미지정=latest) | 재현 가능한 배포를 위한 HF commit SHA 고정. `/health.revision`으로 실제 로드값 확인 |
 | `MATCH_HF_REPO` | (없음) | 로컬 pkl 부재 시 다운로드할 HF repo id |
 | `HF_TOKEN` | (없음) | HF private repo read 토큰 |
 
