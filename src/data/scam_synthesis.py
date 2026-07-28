@@ -11,10 +11,22 @@ LLM 호출은 TextGenerator로 주입한다(테스트는 fake 주입 → 네트�
 from __future__ import annotations
 
 import json
+import sys
 from collections.abc import Sequence
 from typing import Any
 
 from src.data.llm_client import TextGenerator
+
+
+def _safe_generate(generate: TextGenerator, prompt: str, tag: str) -> str | None:
+    """generate 호출을 감싸 한 번의 실패가 전체를 죽이지 않게 한다(원인은 stderr로)."""
+
+    try:
+        return generate(prompt)
+    except Exception as exc:  # noqa: BLE001 — API 실패 유형을 가리지 않고 로깅 후 계속
+        print(f"[scam] {tag} LLM 호출 실패: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return None
+
 
 SOURCE = "synthetic_scam_v1"
 
@@ -105,7 +117,9 @@ def synthesize_scam(
     for subtype, description in specs:
         label = 0 if subtype in BENIGN_SUBTYPES else 1
         prompt = build_synthesis_prompt(per_subtype, subtype, description, label=label)
-        examples.extend(parse_examples(generate(prompt)))
+        raw = _safe_generate(generate, prompt, f"synth:{subtype}")
+        if raw is not None:
+            examples.extend(parse_examples(raw))
     return examples
 
 
@@ -170,9 +184,8 @@ def verify_labels(
     stats = {"total": len(examples), "kept": 0, "dropped": 0, "unparsed": 0}
     for start in range(0, len(examples), batch_size):
         batch = list(examples[start : start + batch_size])
-        verdicts = _parse_verdicts(
-            generate(build_verify_prompt([e["text"] for e in batch])), len(batch)
-        )
+        raw = _safe_generate(generate, build_verify_prompt([e["text"] for e in batch]), "verify")
+        verdicts = _parse_verdicts(raw, len(batch)) if raw is not None else None
         if verdicts is None:
             stats["unparsed"] += len(batch)
             continue

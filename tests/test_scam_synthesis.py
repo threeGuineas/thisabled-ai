@@ -110,3 +110,24 @@ def test_filter_forbidden_noop_without_forbidden():
     examples = [{"text": "x", "label": 1}]
     kept, removed = filter_forbidden(examples, [])
     assert removed == 0 and len(kept) == 1
+
+
+class _RaisingLLM:
+    """한 유형에서만 예외를 던지고 나머지는 정상 응답."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def __call__(self, prompt: str) -> str:
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError("API 404 model not found")
+        label = 0 if '"label": 0' in prompt else 1
+        return json.dumps([{"text": f"t{label}", "label": label, "subtype": "x"}])
+
+
+def test_synthesize_survives_llm_failure():
+    # 첫 유형 호출이 실패해도 전체가 죽지 않고 나머지 유형은 생성된다.
+    examples = synthesize_scam(_RaisingLLM(), per_subtype=1, include_benign=True)
+    n_specs = len(SCAM_SUBTYPES) + len(BENIGN_SUBTYPES)
+    assert len(examples) == n_specs - 1  # 실패한 1개 유형만 빠짐
