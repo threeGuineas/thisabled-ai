@@ -245,6 +245,91 @@ def test_health_reports_active_feature_schema(client_and_models) -> None:
     assert body["feature_schema"] in {"legacy-v1", "match-input-v2"}
 
 
+def _make_v2_bundle() -> dict:
+    """실제 LightGBM 부스터를 config의 15열로 학습한 v2 번들(서빙 실경로 검증용)."""
+    import lightgbm as lgb
+
+    from serving.match_server.app import V2_FEATURE_COLS
+
+    rng = np.random.default_rng(0)
+    n_groups, per = 20, 8
+    x = rng.random((n_groups * per, len(V2_FEATURE_COLS))).astype(np.float32)
+    y = rng.integers(0, 4, size=n_groups * per)
+    dataset = lgb.Dataset(x, label=y, group=[per] * n_groups)
+    booster = lgb.train(
+        {"objective": "lambdarank", "metric": "ndcg", "verbose": -1},
+        dataset,
+        num_boost_round=15,
+    )
+    return {"model": booster, "columns": list(V2_FEATURE_COLS)}
+
+
+def test_v2_real_booster_scores_full_feature_frame(client_and_models, monkeypatch) -> None:
+    """실제 15열 LightGBM 부스터가 /score의 v2 DataFrame에서 예측된다(15↔3 회귀 방지)."""
+    from serving.match_server import app as app_module
+
+    monkeypatch.setattr(app_module, "FEATURE_SCHEMA", "match-input-v2")
+    client, _encoder, _ranker = client_and_models
+    bundle = _make_v2_bundle()
+    app_module._state["ranker"] = bundle["model"]
+    app_module._state["ranker_columns"] = bundle["columns"]
+
+    response = client.post(
+        "/score",
+        json={"me": legacy_user("me"), "candidates": [legacy_user("c1"), legacy_user("c2")]},
+    )
+    assert response.status_code == 200
+    results = response.json()["results"]
+    assert len(results) == 2
+    for item in results:
+        assert set(item) == {"user_id", "score", "reasons"}
+        assert 0.0 <= item["score"] <= 1.0
+        assert set(item["reasons"]).issubset(ALLOWED_RECOMMENDATION_REASONS)
+
+
+def test_resolve_model_path_prefers_hf_when_repo_set(monkeypatch, tmp_path) -> None:
+    """기본 로컬 파일이 있어도 MATCH_HF_REPO가 지정되면 HF를 우선한다(배포 회귀 방지)."""
+    import huggingface_hub
+
+    from serving.match_server import app as app_module
+
+    default_local = tmp_path / "legacy.pkl"
+    default_local.write_bytes(b"x")  # 기본 경로 파일이 존재하는 상황
+    monkeypatch.setattr(app_module, "_EXPLICIT_MODEL_PATH", None)
+    monkeypatch.setattr(app_module, "MODEL_PATH", default_local)
+    monkeypatch.setattr(app_module, "MATCH_HF_REPO", "soyuncj/module2")
+    monkeypatch.setattr(app_module, "MATCH_HF_FILE", "module2_lambdamart_v2.pkl")
+    monkeypatch.setattr(app_module, "MATCH_HF_REVISION", "rev-abc")
+
+    calls: dict = {}
+
+    def fake_download(repo_id, filename, revision):
+        calls.update(repo_id=repo_id, filename=filename, revision=revision)
+        return str(tmp_path / "hf.pkl")
+
+    monkeypatch.setattr(huggingface_hub, "hf_hub_download", fake_download)
+    resolved = app_module._resolve_model_path()
+
+    assert calls == {
+        "repo_id": "soyuncj/module2",
+        "filename": "module2_lambdamart_v2.pkl",
+        "revision": "rev-abc",
+    }
+    assert str(resolved).endswith("hf.pkl")
+
+
+def test_resolve_model_path_explicit_local_overrides_hf(monkeypatch, tmp_path) -> None:
+    from serving.match_server import app as app_module
+
+    explicit = tmp_path / "explicit.pkl"
+    explicit.write_bytes(b"x")
+    monkeypatch.setattr(app_module, "_EXPLICIT_MODEL_PATH", str(explicit))
+    monkeypatch.setattr(app_module, "MODEL_PATH", explicit)
+    monkeypatch.setattr(app_module, "MATCH_HF_REPO", "soyuncj/module2")
+
+    assert app_module._resolve_model_path() == explicit
+
+
 def test_relationship_filtered_candidate_never_reaches_encoder_or_ranker(
     client_and_models,
 ) -> None:
