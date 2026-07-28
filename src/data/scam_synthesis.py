@@ -109,6 +109,25 @@ def synthesize_scam(
     return examples
 
 
+def filter_forbidden(
+    examples: Sequence[dict[str, Any]],
+    forbidden_texts: Sequence[str],
+    *,
+    threshold: float = 0.8,
+) -> tuple[list[dict[str, Any]], int]:
+    """holdout/blind과 근사 중복인 합성 예시를 제거한다(train 누수 방지). (통과, 제거수)."""
+
+    if not forbidden_texts:
+        return list(examples), 0
+    from src.data.dedup import find_duplicate_indices
+
+    dup = find_duplicate_indices(
+        forbidden_texts, [e["text"] for e in examples], threshold=threshold
+    )
+    kept = [example for index, example in enumerate(examples) if index not in dup]
+    return kept, len(dup)
+
+
 def build_verify_prompt(texts: Sequence[str]) -> str:
     payload = json.dumps(list(texts), ensure_ascii=False)
     return (

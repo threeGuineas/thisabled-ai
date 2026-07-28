@@ -8,6 +8,7 @@ from src.data.scam_synthesis import (
     BENIGN_SUBTYPES,
     SCAM_SUBTYPES,
     build_verify_prompt,
+    filter_forbidden,
     parse_examples,
     synthesize_scam,
     verify_labels,
@@ -90,3 +91,22 @@ def test_verify_prompt_roundtrips_texts():
     prompt = build_verify_prompt(["a", "b"])
     payload = prompt.split("# 입력(JSON 배열, 각 메시지)\n", 1)[1].split("\n\n# 출력", 1)[0]
     assert json.loads(payload) == ["a", "b"]
+
+
+def test_filter_forbidden_removes_blind_overlaps():
+    examples = [
+        {"text": "인증번호 여섯 자리 불러주세요 안 그러면 계정 정지됩니다", "label": 1},
+        {"text": "완전히 다른 정상 문장 산책 갈까요 날씨 좋네요", "label": 0},
+    ]
+    forbidden = ["인증번호 여섯 자리 불러주세요 안 그러면 계정이 정지됩니다"]  # blind와 근사 중복
+    kept, removed = filter_forbidden(examples, forbidden, threshold=0.6)
+    kept_texts = {e["text"] for e in kept}
+    assert removed == 1
+    assert "완전히 다른 정상 문장 산책 갈까요 날씨 좋네요" in kept_texts
+    assert all("인증번호 여섯" not in t for t in kept_texts)
+
+
+def test_filter_forbidden_noop_without_forbidden():
+    examples = [{"text": "x", "label": 1}]
+    kept, removed = filter_forbidden(examples, [])
+    assert removed == 0 and len(kept) == 1

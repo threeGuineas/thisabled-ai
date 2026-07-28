@@ -19,7 +19,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from src.data.llm_client import GeminiClient  # noqa: E402
-from src.data.scam_synthesis import synthesize_scam, verify_labels  # noqa: E402
+from src.data.scam_synthesis import (  # noqa: E402
+    filter_forbidden,
+    synthesize_scam,
+    verify_labels,
+)
 
 DEFAULT_OUT = ROOT / "data" / "synthetic" / "scam" / "train.jsonl"
 
@@ -45,6 +49,12 @@ def main() -> int:
     parser.add_argument("--no-verify", action="store_true", help="LLM 검수 생략(디버그)")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--synth-model", default="gemini-flash-latest")
+    parser.add_argument(
+        "--forbidden",
+        action="append",
+        default=[],
+        help="holdout/blind jsonl 경로(반복). 근사중복 합성분을 학습에서 제거(누수 방지)",
+    )
     args = parser.parse_args()
 
     api_key = _load_api_key()
@@ -66,6 +76,17 @@ def main() -> int:
         verify_llm = GeminiClient(api_key, model=args.synth_model, temperature=0.0)
         kept, stats = verify_labels(verify_llm, examples)
         print(f"   통과 {stats['kept']} / 탈락 {stats['dropped']} / 미파싱 {stats['unparsed']}")
+
+    if args.forbidden:
+        forbidden_texts: list[str] = []
+        for path in args.forbidden:
+            forbidden_texts += [
+                json.loads(line)["text"]
+                for line in Path(path).read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+        kept, removed = filter_forbidden(kept, forbidden_texts)
+        print(f"3. 누수 제거(holdout/blind 근사중복): {removed}건 제거 → {len(kept)}건")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", encoding="utf-8") as handle:
