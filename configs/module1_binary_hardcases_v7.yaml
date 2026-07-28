@@ -20,6 +20,8 @@ data:
     - "data/synthetic/kmhas.jsonl"
     - "data/synthetic/apeach.jsonl"
     - "data/synthetic/scam/train.jsonl"
+  extra_train_approval_manifests:
+    "data/synthetic/scam/train.jsonl": "data/synthetic/scam/approval.json"
   extra_train_repeat: 1
 training:
   batch_size: 32

@@ -17,6 +17,7 @@ import argparse
 import json
 import re
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
 import pandas as pd
@@ -40,7 +41,35 @@ DEDUP_THRESHOLD = 0.8  # MinHash Jaccard 임계값: 이 이상 유사한 합성 
 
 def _norm_text(text: object) -> str:
     """문장부호·공백·대소문자를 무시하는 완전 일치 누수 검사 키."""
-    return re.sub(r"[^0-9a-z가-힣]+", "", str(text).lower())
+    return re.sub(r"[^0-9a-z가-힣ㄱ-ㅎㅏ-ㅣ]+", "", str(text).lower())
+
+
+def _load_forbidden_texts(paths: Sequence[str | Path]) -> pd.Series:
+    """명시된 소비 평가 JSONL만 읽는다. glob으로 future blind를 선사용하지 않는다."""
+
+    texts: list[str] = []
+    for raw_path in paths:
+        path = Path(raw_path)
+        if not path.is_absolute():
+            path = ROOT / path
+        if not path.is_file():
+            raise FileNotFoundError(f"forbidden JSONL 없음: {path}")
+        with path.open(encoding="utf-8") as file:
+            rows_before = len(texts)
+            for line_number, line in enumerate(file, 1):
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise ValueError(f"forbidden JSON 오류: {path}:{line_number}") from exc
+                text = row.get("text") if isinstance(row, dict) else None
+                if not isinstance(text, str) or not text.strip():
+                    raise ValueError(f"forbidden text 누락: {path}:{line_number}")
+                texts.append(text)
+            if len(texts) == rows_before:
+                raise ValueError(f"forbidden JSONL 비어 있음: {path}")
+    return pd.Series(texts, dtype="object")
 
 
 def _load_real_holdout_norm() -> set[str]:
@@ -119,7 +148,12 @@ def _load_aihub_train() -> pd.DataFrame:
     return df
 
 
-def build_final_dataset(seed: int = 42, synth_repeat: int = 1, include_aihub: bool = False) -> None:
+def build_final_dataset(
+    seed: int = 42,
+    synth_repeat: int = 1,
+    include_aihub: bool = False,
+    forbidden_paths: Sequence[str | Path] = (),
+) -> None:
     print(
         f"=== 통합 최종 데이터셋 빌드 (synth_repeat={synth_repeat}, include_aihub={include_aihub}) ==="
     )
@@ -178,6 +212,23 @@ def build_final_dataset(seed: int = 42, synth_repeat: int = 1, include_aihub: bo
                     f"{removed_by_source}"
                 )
 
+        if forbidden_paths:
+            forbidden_texts = _load_forbidden_texts(forbidden_paths)
+            forbidden_norm = {key for text in forbidden_texts if (key := _norm_text(text))}
+            exact_mask = merged_train["text"].map(_norm_text).isin(forbidden_norm)
+            exact_removed = int(exact_mask.sum())
+            if exact_removed:
+                merged_train = merged_train.loc[~exact_mask].reset_index(drop=True)
+            merged_train, near_removed = deduplicate_against(
+                forbidden_texts,
+                merged_train,
+                threshold=DEDUP_THRESHOLD,
+            )
+            print(
+                "  → 명시 forbidden exact/near 중복 제거: "
+                f"exact {exact_removed}건, near {near_removed}건"
+            )
+
         merged_train = merged_train.sample(frac=1.0, random_state=seed).reset_index(drop=True)
         save_dataset(merged_train, train_path)
         dist = merged_train["label"].value_counts().sort_index()
@@ -219,8 +270,17 @@ if __name__ == "__main__":
         action="store_true",
         help="data/eval/aihub_train.jsonl(실데이터, hold-out 배제분)을 train에 투입",
     )
+    parser.add_argument(
+        "--forbidden",
+        action="append",
+        default=[],
+        help="이미 소비된 평가 JSONL 경로(반복). exact/near 중복을 최종 train에서 제거",
+    )
     args = parser.parse_args()
 
     build_final_dataset(
-        seed=args.seed, synth_repeat=args.synth_repeat, include_aihub=args.include_aihub_train
+        seed=args.seed,
+        synth_repeat=args.synth_repeat,
+        include_aihub=args.include_aihub_train,
+        forbidden_paths=args.forbidden,
     )

@@ -7,7 +7,8 @@
   data/synthetic/apeach.jsonl      {text, label(0/1), source:"apeach"}
                                    → configs extra_train_jsonl 경로 (라벨 보존)
 
-누수 차단: 세 소스 모두 실데이터 홀드아웃(aihub/beep) + 소비 blind(v1..v7)와
+누수 차단: 세 소스 모두 실데이터 홀드아웃(aihub/beep) + 소비 blind(v1..v9) +
+grooming 개발셋과
 MinHash(0.8) 및 정규화 exact 로 교차 dedup 후 저장. (trainer의 extra_* 경로는
 build_final_dataset 의 홀드아웃 dedup을 거치지 않으므로 여기서 선제 차단한다.)
 
@@ -41,11 +42,25 @@ DEDUP_THRESHOLD = 0.8
 KMHAS_CAP = 15000  # 79k 전량은 base(~48k)를 압도 → 균형 위해 이진 층화 샘플
 SEED = 42
 
-_WS = re.compile(r"\s+")
+_EXACT_NOISE = re.compile(r"[^0-9a-z가-힣ㄱ-ㅎㅏ-ㅣ]+", re.IGNORECASE)
+CONSUMED_BLIND_VERSIONS = tuple(range(1, 10))
+GROOMING_DEV_FILES = (
+    SYNTH_DIR / "emergency" / "3a" / "val.jsonl",
+    SYNTH_DIR / "emergency" / "3a" / "test.jsonl",
+)
 
 
 def _norm(t: object) -> str:
-    return _WS.sub(" ", str(t)).strip().lower()
+    """공백·구두점·대소문자를 무시하되 한글 자모는 보존하는 exact key."""
+
+    return _EXACT_NOISE.sub("", str(t)).lower()
+
+
+def _display_path(path: Path) -> Path:
+    try:
+        return path.relative_to(ROOT)
+    except ValueError:
+        return path
 
 
 def load_forbidden_texts() -> pd.Series:
@@ -54,10 +69,12 @@ def load_forbidden_texts() -> pd.Series:
     src_files = [
         EVAL_DIR / "aihub_real_holdout.jsonl",
         EVAL_DIR / "beep_real_holdout.jsonl",
-    ] + sorted(FIXTURE_DIR.glob("safe_blind_v*.jsonl"))
+        *(FIXTURE_DIR / f"safe_blind_v{version}.jsonl" for version in CONSUMED_BLIND_VERSIONS),
+        *GROOMING_DEV_FILES,
+    ]
     for p in src_files:
         if not p.exists():
-            print(f"  · 참조 없음(건너뜀): {p.relative_to(ROOT)}")
+            print(f"  · 참조 없음(건너뜀): {_display_path(p)}")
             continue
         n = 0
         with p.open(encoding="utf-8") as f:
@@ -73,7 +90,7 @@ def load_forbidden_texts() -> pd.Series:
                 if t:
                     texts.append(str(t))
                     n += 1
-        print(f"  · forbidden 참조 {n:5d}건 ← {p.relative_to(ROOT)}")
+        print(f"  · forbidden 참조 {n:5d}건 ← {_display_path(p)}")
     print(f"  → forbidden 총 {len(texts)}건")
     return pd.Series(texts, dtype="object")
 
@@ -81,15 +98,15 @@ def load_forbidden_texts() -> pd.Series:
 def dedup_report(df: pd.DataFrame, forbidden: pd.Series, name: str) -> pd.DataFrame:
     """정규화 exact + MinHash near-dup 두 단계로 forbidden 제거."""
     before = len(df)
-    forb_norm = set(forbidden.map(_norm))
-    df = df[~df["text"].map(_norm).isin(forb_norm)].reset_index(drop=True)
+    forb_norm = {key for text in forbidden if (key := _norm(text))}
+    candidate_keys = df["text"].map(_norm)
+    df = df[~candidate_keys.isin(forb_norm) & candidate_keys.ne("")].reset_index(drop=True)
     exact_removed = before - len(df)
     if len(df):
         df, near_removed = deduplicate_against(forbidden, df, threshold=DEDUP_THRESHOLD)
     else:
         near_removed = 0
     # 자기 자신 내부 중복(정규화 exact)도 제거
-    df = df.drop_duplicates(subset=df["text"].map(_norm).name or "text")
     df = df.loc[~df["text"].map(_norm).duplicated()].reset_index(drop=True)
     print(
         f"[{name}] {before} → {len(df)}  (홀드아웃/blind exact -{exact_removed}, near -{near_removed})"

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pandas as pd
 
 import scripts.build_final_dataset as bfd
@@ -117,3 +119,30 @@ def test_build_final_dataset_repeat_zero_seed_only(tmp_path, monkeypatch):
     result = pd.read_parquet(tmp_path / "train.parquet")
     assert len(result) == 100
     assert not result["source"].str.startswith("synthetic_").any()
+
+
+def test_build_final_dataset_removes_explicit_forbidden_exact_variant(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(bfd, "PROCESSED_DIR", tmp_path)
+    monkeypatch.setattr(bfd, "SYNTH_DIR", tmp_path / "synth")
+    seed = _make_seed_train()
+    seed.loc[0, "text"] = "삼가고인의명복을빕니다..."
+    seed.to_parquet(tmp_path / "train.parquet", index=False)
+    empty = pd.DataFrame(columns=["text", "label", "source", "source_id"])
+    monkeypatch.setattr(
+        bfd,
+        "load_synthetic_splits",
+        lambda _d: {"train": empty, "val": empty, "test": empty},
+    )
+    forbidden = tmp_path / "consumed.jsonl"
+    forbidden.write_text(
+        json.dumps({"text": "삼가 고인의 명복을 빕니다"}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+    bfd.build_final_dataset(forbidden_paths=[forbidden])
+
+    result = pd.read_parquet(tmp_path / "train.parquet")
+    assert "삼가고인의명복을빕니다..." not in set(result["text"])
