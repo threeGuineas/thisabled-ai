@@ -1,98 +1,237 @@
-# 모듈 ② 사용자 호환성 매칭 데이터 스키마 및 피처 설계 정의서
+# 모듈 ② MATCH 입력·특성 스키마
 
-본 문서는 **모듈 ② (사용자 호환성 매칭)** 의 학습 데이터 형태를 정의하고, SBERT 임베딩 및 메타데이터를 활용한 피처 엔지니어링 스펙을 확정합니다.
+이 문서는 커뮤니티 친구 추천용 MATCH 입력 파이프라인의 현재 계약을 정의한다.
+연애·데이트 매칭, 장애 유형 추정 및 장애 인증 정보 사용은 범위에서 제외한다.
 
----
+## 1. 책임 경계
 
-## 1. 데이터 아키텍처 개요
+- 백엔드: 인증, DB 조회, 생년월일→만 나이/연령대 계산, TAG-01 조회, 후보 관계 선필터링
+- MATCH 입력 파이프라인: 허용 필드 검증, 개인정보 차단, 콘텐츠 활성 상태 선별, 일괄 임베딩,
+  사용자·페어 특성 생성
+- LambdaMART: 검증된 수치 특성으로 후보 순위 계산
+- 백엔드 응답 계층: 공개 프로필 결합과 최종 추천 사유 allowlist 검증
 
-사용자 호환성 매칭은 특정 사용자($User_A$)에게 가장 적합한 다른 사용자($User_B$)를 추천 및 정렬하는 **Learning-to-Rank (LTR)** 문제로 정의합니다.
-- **백본**: `jhgan/ko-sroberta-multitask` (SBERT 텍스트 임베딩 추출)
-- **랭킹 모델**: `LightGBM LambdaMART` (`objective="lambdarank"`, `metric="ndcg"`)
-- **평가 메트릭**: `NDCG@5`, `NDCG@10` (목표: NDCG@10 ≥ 0.60)
+정확한 생년월일은 MATCH 모델 서비스에 전달하지 않는다.
 
----
+## 2. `/score` 호환 계약
 
-## 2. 사용자 프로필 스키마 (User Profile Schema)
+현재 백엔드가 보내는 기존 5필드 계약은 그대로 유효하다.
 
-각 사용자는 개인 성향, 관심사, 도메인 맥락(장애 도메인)을 포함하는 정형/비정형 정보를 가집니다.
-
-| 필드명 | 데이터 타입 | 설명 | 예시 |
-|---|---|---|---|
-| `user_id` | `str` | 고유 식별자 (UUID 또는 인덱스) | `"usr_10028"` |
-| `introduction` | `str` | 자기소개 자연어 텍스트 (SBERT 임베딩 대상) | `"안녕하세요! 운동과 음악을 좋아하는 발달장애 청년입니다. 같이 소통할 친구 찾아요."` |
-| `age` | `int` | 나이 | `24` |
-| `gender` | `str` | 성별 (`"남성"`, `"여성"`, `"기타"`) | `"남성"` |
-| `region` | `str` | 주요 활동 지역 (시/도 단위) | `"서울"`, `"경기"`, `"부산"`, `"대구"`, `"인천"` |
-| `disability_type` | `str` | 장애 유형 | `"발달장애"`, `"시각장애"`, `"청각장애"`, `"지체장애"`, `"비장애"` |
-| `interests` | `list[str]` | 관심사 태그 목록 | `["운동", "음악", "독서", "게임", "맛집"]` |
-| `mbti` | `str` | MBTI 성향 (16종) | `"ENFP"`, `"ISTJ"` |
-
----
-
-## 3. 랭킹 쿼리 및 relevance 라벨 정책
-
-LambdaMART 학습을 위해 **질의(Query, 주 사용자 $User_A$)** 와 **후보군(Candidates, 대상 사용자 $User_B$)** 의 페어를 구성하고, 호환성 강도를 나타내는 **Relevance Label ($y \in \{0, 1, 2, 3\}$)** 을 다음과 같은 규칙 기반 규칙으로 설계 및 합성합니다.
-
-> [!IMPORTANT]
-> 랭킹 데이터셋은 하나의 `query_group` (동일한 $User_A$)으로 묶여 있어야 LambdaMART가 NDCG 손실 함수를 통해 정렬을 올바르게 학습할 수 있습니다.
-
-### Relevance Label 4단계 정의 (호환성 강도)
-
-- **`3` (최상 호환 - Strongly Relevant)**:
-  - 지역이 일치하고, 나이 차이가 5세 이하이며,
-  - 겹치는 관심사가 2개 이상이고,
-  - SBERT 자기소개 임베딩 코사인 유사도가 임계치(예: 0.70) 이상.
-- **`2` (우수 호환 - Relevant)**:
-  - 지역이 일치하고, 나이 차이가 10세 이하이며,
-  - 겹치는 관심사가 1개 이상이거나 SBERT 유사도가 0.60 이상.
-- **`1` (보통 호환 - Marginally Relevant)**:
-  - 지역 또는 연령대 중 최소 하나가 매칭되고, 공통점이 최소한으로 존재.
-- **`0` (비호환 - Irrelevant)**:
-  - 공통 관심사가 전혀 없거나, 지역/연령 등 주요 매칭 조건이 크게 불일치.
-
----
-
-## 4. 피처 엔지니어링 명세 (Feature Engineering Specification)
-
-모델의 입력 피처 벡터 $\mathbf{x}_{AB}$ 는 SBERT 임베딩 간의 유사도 특징량과 사용자 간 메타데이터 연산 특징량의 결합으로 정의됩니다.
-
-### 4.1 SBERT 임베딩 피처 (비정형 텍스트 매칭)
-$User_A$와 $User_B$의 자기소개 임베딩 벡터를 각각 $\mathbf{u}_A, \mathbf{u}_B \in \mathbb{R}^{d}$ ($d=768$) 라고 할 때:
-
-1. **Cosine Similarity**: 두 벡터 간 각도 유사도
-   $$f_{\text{cosine}} = \frac{\mathbf{u}_A \cdot \mathbf{u}_B}{\|\mathbf{u}_A\| \|\mathbf{u}_B\|}$$
-2. **L1 Distance**: 원소별 절대 차이 합
-   $$\mathbf{f}_{\text{L1}} = |\mathbf{u}_A - \mathbf{u}_B| \in \mathbb{R}^{d}$$
-3. **L2 Distance**: Euclidean 거리
-   $$f_{\text{L2}} = \|\mathbf{u}_A - \mathbf{u}_B\|_2$$
-4. **Hadamard Product**: 원소별 곱 (공통 활성화 영역 인지)
-   $$\mathbf{f}_{\text{hadamard}} = \mathbf{u}_A \odot \mathbf{u}_B \in \mathbb{R}^{d}$$
-
-### 4.2 메타데이터 피처 (정형 데이터 매칭)
-
-1. **`age_diff`**: 연령 차이의 절대값
-   $$f_{\text{age\_diff}} = |age_A - age_B|$$
-2. **`region_match`**: 활동 지역 동일 여부 (바이너리)
-   $$f_{\text{region\_match}} = \mathbb{I}(region_A == region_B)$$
-3. **`gender_compatibility`**: 성별 선호도 매칭 여부 (바이너리)
-4. **`disability_type_match`**: 장애 유형 일치/유사 여부 (바이너리)
-   $$f_{\text{disability\_match}} = \mathbb{I}(disability\_type_A == disability\_type_B)$$
-5. **`interest_overlap_count`**: 공통 관심사 개수
-   $$f_{\text{interest\_overlap}} = |interests_A \cap interests_B|$$
-6. **`mbti_compatibility`**: MBTI 궁합 점수 (전통적인 MBTI 궁합 척도에 따라 1~5점 부여)
-
----
-
-## 5. LambdaMART 학습 데이터셋 파일 명세
-
-최종적으로 학습에 입력되는 데이터프레임 스키마는 다음과 같습니다.
-
-```
-[query_id, user_a_id, user_b_id, f_cosine, f_l2, f_age_diff, f_region_match, f_disability_match, f_interest_overlap, ..., relevance_label]
+```json
+{
+  "me": {
+    "user_id": "uuid",
+    "bio": "영화와 야구를 좋아해요.",
+    "tags": ["movie", "walking"],
+    "age_band": "25-34",
+    "ui_mode": "visual"
+  },
+  "candidates": []
+}
 ```
 
-- **학습용 그룹 포맷 (group)**: LightGBM lambdarank는 각 쿼리 그룹별 데이터 크기 배열(`group` 파일 또는 API 파라미터)이 필요합니다.
-  - 예: `group = [10, 10, 10, ...]` (각 쿼리 사용자당 10명의 후보자 페어가 정렬되어 구성됨을 뜻함)
+입력 파이프라인 v2는 다음 선택 필드를 추가로 받는다.
 
-이 스키마 설계를 기반으로 **D4에서 `ko-sroberta` 임베딩 캐싱 기술 및 LightGBM Ranker 학습 파이프라인**을 성공적으로 구축할 것입니다.
+```json
+{
+  "me": {
+    "user_id": "uuid",
+    "bio": "영화와 야구를 좋아해요.",
+    "tags": ["movie", "walking"],
+    "age_years": 27,
+    "age_band": "25-34",
+    "ui_mode": "visual",
+    "authored_items": [],
+    "liked_items": []
+  },
+  "candidates": [
+    {
+      "user_id": "candidate-uuid",
+      "bio": "영화 이야기를 나눌 친구를 찾아요.",
+      "tags": ["movie"],
+      "age_years": 29,
+      "age_band": "25-34",
+      "ui_mode": "hearing",
+      "authored_items": [],
+      "liked_items": [],
+      "relationship": {
+        "blocked_either_direction": false,
+        "already_friends": false,
+        "last_rejected_at": null,
+        "common_friend_count": 2
+      }
+    }
+  ]
+}
+```
+
+Wire 이름 `tags`는 기존 백엔드 호환을 위해 유지하고 내부에서는 `tag_ids`로 변환한다.
+`relationship`이 없으면 현재 백엔드가 이미 후보를 선필터링한 legacy 요청으로 처리한다.
+관계 정보가 전달된 경우에만 MATCH 서비스가 방어적 2차 검사를 수행할 수 있다.
+
+응답은 다음 공개 필드만 포함한다.
+
+```json
+{
+  "results": [
+    {
+      "user_id": "candidate-uuid",
+      "score": 0.81,
+      "reasons": ["관심사가 비슷해요", "공통 친구가 있어요"]
+    }
+  ]
+}
+```
+
+`model_score`, UI 모드, 관계 상태, 원문 콘텐츠, 내부 특성은 응답하지 않는다.
+
+## 3. 입력 규칙
+
+### 사용자
+
+| 필드 | 규칙 |
+|---|---|
+| `user_id` | 비어 있지 않은 최대 128자 식별자 |
+| `bio` | 선택 입력, 정규화 후 최대 300자, 연락처 발견 시 요청 거부 |
+| `tags` | TAG-01 코드, 중복 제거 후 최대 10개 |
+| `age_years` | 선택적 만 나이 14~120, 생년월일 원문 금지 |
+| `age_band` | 선택적 `14-18`, `19-24`, `25-34`, `35-44`, `45-54`, `55+` |
+| `ui_mode` | `visual`, `hearing`, `developmental`; 추천 사유·응답 비노출 |
+
+연령대의 한글 명세 표기(`25~34세` 등)도 입력 alias로 받고 내부에서 한 값으로 정규화한다.
+`age_years`와 `age_band` 중 하나 이상은 반드시 있어야 하며, 함께 있으면 서로 일치해야 한다.
+TAG-01 허용 코드는 `configs/module2_matching.yaml`의 43개 레지스트리에서 읽는다.
+
+### 콘텐츠
+
+| 필드 | 규칙 |
+|---|---|
+| `content_id` | 콘텐츠 중복 제거 키 |
+| `source_type` | `post` 또는 `comment`만 허용 |
+| `text` | 빈 문자열과 연락처 포함 항목 제외, 임베딩 길이 상한 적용 |
+| `created_at` | 시간대가 포함된 시각, 미래·분석 기간 밖 항목 제외 |
+| `is_deleted` | true이면 즉시 제외 |
+| `is_accessible` | false이면 즉시 제외 |
+| `is_blocked_author` | true이면 즉시 제외 |
+| `is_like_active` | 좋아요 취소 시 false, 다음 갱신부터 제외 |
+
+### 명시적으로 허용하지 않는 데이터
+
+- 닉네임, 프로필 이미지
+- 1:1 채팅 메시지
+- 전화번호, 이메일, 외부 메신저 ID
+- 정확한 위치
+- 장애 유형 및 인증 정보
+- AI 위험 메시지 판정 기록
+- 생년월일 원문
+
+알 수 없는 필드는 HTTP 경계에서 거부한다. 오류 응답에는 입력값을 포함하지 않는다.
+
+## 4. 처리 순서
+
+1. 요청 필드와 크기 상한을 검증한다.
+2. 자기소개에서 연락처를 발견하면 `CONTACT_INFO_DETECTED`로 거부한다.
+3. 후보 관계 제외를 콘텐츠 검증과 encoder 호출보다 먼저 수행한다.
+4. 삭제·접근 불가·차단 작성자·연락처·기간 밖 콘텐츠를 제거한다.
+5. 허용된 모든 사용자 텍스트를 한 번의 Sentence-BERT 배치로 임베딩한다.
+6. profile/authored/liked 벡터를 분리 집계하고 페어 특성을 만든다.
+7. 현재 모델 스키마에 맞는 열만 명시적으로 투영해 예측한다.
+8. 정확한 allowlist 문장으로 추천 사유를 만든다.
+
+## 5. 후보 제외
+
+다음 후보는 임베딩 및 점수 계산 전에 제외한다.
+
+- 자기 자신
+- 어느 방향이든 차단된 사용자
+- 이미 친구인 사용자
+- 친구 요청 거절 후 30일이 지나지 않은 사용자
+- `14~18세`와 성인 연령대 사이의 양방향 조합
+
+현재 백엔드는 이 규칙을 DB 후보 조회 단계에서 강제한다. 확장 `relationship`이 제공되면 MATCH
+서비스도 같은 규칙을 재검사한다. 정확히 30일이 지난 거절은 다시 후보가 될 수 있다.
+
+## 6. 임베딩과 집계
+
+- `profile_vector`: 자기소개와 태그를 합친 텍스트의 SBERT 벡터
+- `authored_vector`: 허용된 게시물·댓글 벡터의 단위 정규화 평균
+- `liked_vector`: 활성 좋아요 콘텐츠 벡터의 단위 정규화 평균
+- `effective_vector`: 존재하는 세 성분 벡터의 단위 정규화 평균
+
+성분이 없으면 0 벡터로 가장하지 않고 `*_available` 특성을 0으로 둔다. 자기소개가 없어도 태그,
+작성물, 좋아요, 공통 친구, UI 모드를 사용할 수 있다. 이 신호도 없으면 `insufficient_signal`로
+처리하며 `/score`는 빈 결과와 `추천 정보가 부족합니다` 메시지를 반환한다.
+
+## 7. 페어 특성
+
+입력 파이프라인 v2는 다음 계열을 생성한다.
+
+- 프로필·작성물·좋아요·유효 관심 벡터 cosine
+- 프로필 raw SBERT L2
+- 질의 사용자의 좋아요와 후보 작성물 간 cosine
+- 태그 교집합 수와 Jaccard
+- 공통 친구 수
+- 만 나이 차이와 연령대 일치
+- UI 모드 일치(내부 전용)
+- 각 벡터/연령 특성의 availability
+
+## 8. 랭커 스키마 (legacy-v1 ↔ match-input-v2)
+
+서빙은 `MATCH_FEATURE_SCHEMA`(config `features.feature_schema`)로 두 스키마를 전환한다.
+
+**legacy-v1** (기본): 구형 3열 pickle.
+
+```text
+f_cosine, f_l2, f_dis_match
+```
+
+- `f_cosine`, `f_l2`는 프로필 raw SBERT 벡터에서 계산한다.
+- pickle의 구형 열 이름 `f_dis_match`에는 서빙 시 `f_ui_mode_match`만 투영한다(shim).
+- 점수식: `W_MODEL·sigmoid(ranker) + W_TAG·norm_tag_overlap + W_AGE·age_band_match`.
+
+**match-input-v2**: 재학습된 15열 LambdaMART(`configs/module2_matching.yaml`의
+`features.v2_pair_features`). pickle은 `{model, columns, params, metrics}` 번들이며 열
+순서를 함께 저장한다.
+
+- 15열 전체를 순서대로 랭커에 전달한다(투영 shim 없음).
+- 모델이 태그·나이·콘텐츠·공통친구를 이미 학습했으므로 서빙에서 재가산하지 않는다.
+  점수식: `score = sigmoid(ranker)` (순수 모델 점수).
+- 배포는 HF revision을 고정한다: repo `soyuncj/module2`, 파일 `module2_lambdamart_v2.pkl`,
+  revision `ecb31a428e74dfc393617a6a4a95ecc4cb7e6d67`. 상세 env는 `serving/README.md`.
+- 학습·평가·공정성: `scripts/train_match_v2.py`(잠재라벨 합성 + AI허브 실문장 코퍼스),
+  `scripts/evaluate_match_v2_fairness.py`(ui_mode DP ≤ 0.10). 특성 생성은 학습·서빙 모두
+  `matching_input.build_pair_features`를 그대로 호출한다.
+
+**롤백**: `MATCH_FEATURE_SCHEMA=legacy-v1`로 되돌리고 재기동. legacy pickle·shim은 유지한다.
+
+## 9. 추천 사유 allowlist
+
+- `관심사가 비슷해요`
+- `관심 있는 콘텐츠가 비슷해요`
+- `공통 친구가 있어요`
+- `비슷한 연령대예요`
+- `소개 내용이 비슷해요`
+
+UI 모드와 장애 관련 문구, 특정 게시물·댓글 원문은 추천 사유에 사용할 수 없다.
+
+## 10. 운영 설정
+
+기본값은 `configs/module2_matching.yaml`과 MATCH 서버 환경변수로 관리한다.
+
+- 작성물/좋아요 분석 기간: 각각 90일
+- 작성물/좋아요 최대 수: 각각 100개
+- 콘텐츠 임베딩 입력: 항목당 최대 2,000자
+- 요청당 후보: 최대 200명
+- 거절 제외 기간: 30일
+
+삭제·차단·접근 변경의 즉시 반영은 백엔드가 최신 상태를 전달하거나 캐시 무효화 이벤트를
+제공해야 완전히 보장된다. 현재 입력 파이프라인은 요청에 전달된 상태를 항상 재검사한다.
+
+## 11. 검증
+
+```bash
+.venv/bin/python -m pytest -q tests/test_matching_input.py tests/test_match_server_input.py
+.venv/bin/ruff check src/data/matching_input.py serving/match_server/app.py \
+  tests/test_matching_input.py tests/test_match_server_input.py
+.venv/bin/python -m pytest -q tests/test_module2_pair.py
+```

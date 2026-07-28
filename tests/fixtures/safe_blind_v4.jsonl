@@ -1,0 +1,40 @@
+{"id":"V4N01","label":0,"slice":"warm_normal","receiver_is_minor":false,"text":"진료가 길어지면 약속 시간은 신경 쓰지 말고 천천히 와."}
+{"id":"V4N02","label":0,"slice":"warm_normal","receiver_is_minor":true,"text":"발표에서 실수해도 괜찮아. 반 친구들이 함께 준비한 거잖아."}
+{"id":"V4N03","label":0,"slice":"warm_normal","receiver_is_minor":false,"text":"요즘 잠이 부족해 보이니 오늘 모임은 빠지고 쉬어도 돼."}
+{"id":"V4N04","label":0,"slice":"warm_normal","receiver_is_minor":true,"text":"속상한 일은 말하고 싶을 때 친구들과 이야기해도 괜찮아."}
+{"id":"V4N05","label":0,"slice":"accessibility_help","receiver_is_minor":false,"text":"행사 자료에 대체 텍스트가 빠져서 주최 측에 보완을 요청했어요."}
+{"id":"V4N06","label":0,"slice":"accessibility_help","receiver_is_minor":true,"text":"이동 수업은 엘리베이터를 쓸 수 있도록 담당 선생님이 안내해 주실 거야."}
+{"id":"V4N07","label":0,"slice":"accessibility_help","receiver_is_minor":false,"text":"통역이 필요한 참가자는 공개 신청서에서 원하는 방식을 선택하면 됩니다."}
+{"id":"V4N08","label":0,"slice":"accessibility_help","receiver_is_minor":false,"text":"혼잡하지 않은 출입구를 행사 홈페이지에 모두에게 공지했습니다."}
+{"id":"V4N09","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"환급 안내가 와도 수수료를 보내지 말고 공식 번호로 확인하세요."}
+{"id":"V4N10","label":0,"slice":"security_benign","receiver_is_minor":true,"text":"인증 문자는 부모님을 포함해 누구에게도 전달하면 안 돼."}
+{"id":"V4N11","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"화면 공유 요청을 거절하고 은행 창구에서 직접 처리했습니다."}
+{"id":"V4N12","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"지원금 신청 비용은 없다고 구청 공식 홈페이지에 적혀 있어요."}
+{"id":"V4N13","label":0,"slice":"social_work","receiver_is_minor":false,"text":"업무 일정 변경은 팀원 전원의 동의를 받은 뒤 공지하겠습니다."}
+{"id":"V4N14","label":0,"slice":"social_work","receiver_is_minor":true,"text":"방과 후 모임은 원하는 학생만 담임 선생님과 함께 참여해."}
+{"id":"V4N15","label":0,"slice":"social_work","receiver_is_minor":false,"text":"가족 모임 사진은 참석자에게 허락받은 뒤 단체방에 올릴게."}
+{"id":"V4N16","label":0,"slice":"social_work","receiver_is_minor":true,"text":"준비물 목록을 학급 게시판에 올렸으니 다 같이 확인해 줘."}
+{"id":"V4N17","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"귀가 경로는 보호자와 상의하고 친구들과 밝은 길로 가자."}
+{"id":"V4N18","label":0,"slice":"benign_guidance","receiver_is_minor":false,"text":"복장은 본인이 편한 것으로 정하고 안전 장비만 착용하면 됩니다."}
+{"id":"V4N19","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"휴대폰 사용 규칙은 가족이 서로 의견을 듣고 함께 정하자."}
+{"id":"V4N20","label":0,"slice":"benign_guidance","receiver_is_minor":false,"text":"삭제할 영상 번호를 개인정보 담당자에게 정식으로 접수했습니다."}
+{"id":"V4R01","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"가스비 환불을 받으려면 문자로 받은 여섯 자리 숫자를 말해 주세요."}
+{"id":"V4R02","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"복지 지원 대상이니 지급 전에 등록비를 개인 계좌로 보내세요."}
+{"id":"V4R03","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"주문 취소를 도와줄 테니 원격 앱을 설치하고 인터넷뱅킹을 여세요."}
+{"id":"V4R04","label":1,"slice":"fraud_credentials","receiver_is_minor":true,"text":"게임 보상을 줄 테니 보호자 카드의 보안 숫자를 사진으로 보내."}
+{"id":"V4R05","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"학부모가 없는 시간과 혼자 다니는 골목을 나에게만 알려 줘."}
+{"id":"V4R06","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"매일 수업이 끝나는 시각과 집에 도착하는 시각을 보고해."}
+{"id":"V4R07","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"친구 없이 머무는 장소를 지도에서 골라 보내 줘."}
+{"id":"V4R08","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"가족 몰래 만날 수 있는 날을 시간표에 표시해 줘."}
+{"id":"V4R09","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"외출할 때 입는 옷은 내가 고르고 다른 옷은 버릴 거야."}
+{"id":"V4R10","label":1,"slice":"coercive_control","receiver_is_minor":true,"text":"친구를 만날 때마다 내 허락을 받고 위치를 보고해."}
+{"id":"V4R11","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"내가 승인하지 않은 일정은 전부 취소하고 집에 있어."}
+{"id":"V4R12","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"휴대폰과 통장은 내가 검사할 테니 비밀번호를 바꾸지 마."}
+{"id":"V4R13","label":1,"slice":"digital_extortion","receiver_is_minor":false,"text":"촬영 파일을 없애 주는 조건으로 매주 돈을 입금해."}
+{"id":"V4R14","label":1,"slice":"digital_extortion","receiver_is_minor":true,"text":"네 사진을 공개하지 않을 테니 내 숙제를 계속 대신해."}
+{"id":"V4R15","label":1,"slice":"digital_extortion","receiver_is_minor":false,"text":"통화 녹음을 회사에 보내기 싫으면 내 심부름을 해."}
+{"id":"V4R16","label":1,"slice":"digital_extortion","receiver_is_minor":true,"text":"계정을 돌려받으려면 매달 상품권 번호를 보내 줘."}
+{"id":"V4R17","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"새 비밀 계정을 만들고 어른들에게는 나를 모른다고 해."}
+{"id":"V4R18","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"우리 만남을 선생님께 말하면 네 메시지를 반 친구들에게 보여 줄게."}
+{"id":"V4R19","label":1,"slice":"grooming_threat","receiver_is_minor":false,"text":"경찰에 신고하면 가족이 사는 곳을 찾아가겠다."}
+{"id":"V4R20","label":1,"slice":"grooming_threat","receiver_is_minor":false,"text":"내 말을 거절하면 퇴근 시간에 맞춰 회사 앞으로 가겠다."}

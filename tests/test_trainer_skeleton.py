@@ -68,3 +68,33 @@ def test_processed_parquet_exists_and_has_schema():
         assert list(df.columns) == ["text", "label", "source", "source_id"]
         assert df["label"].isin([0, 1, 2, 3]).all()
         assert len(df) > 0
+
+
+def test_load_extra_binary_train_preserves_labels_and_repeats(tmp_path):
+    import json
+
+    from src.training.trainer import load_extra_binary_train
+
+    path = tmp_path / "hardcases.jsonl"
+    rows = [
+        {"text": "따뜻한 정상 문장", "label": 0, "source_id": "n1"},
+        {"text": "인증번호를 보내 주세요", "label": 1, "source_id": "r1"},
+    ]
+    path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows))
+
+    result = load_extra_binary_train(
+        tmp_path,
+        {"extra_train_jsonl": ["hardcases.jsonl"], "extra_train_repeat": 3},
+    )
+
+    assert result is not None
+    assert len(result) == 6
+    assert result["label"].value_counts().to_dict() == {0: 3, 1: 3}
+
+
+def test_load_extra_binary_train_rejects_non_binary_label(tmp_path):
+    from src.training.trainer import load_extra_binary_train
+
+    (tmp_path / "bad.jsonl").write_text('{"text":"x","label":3}\n')
+    with pytest.raises(ValueError, match="binary label"):
+        load_extra_binary_train(tmp_path, {"extra_train_jsonl": ["bad.jsonl"]})

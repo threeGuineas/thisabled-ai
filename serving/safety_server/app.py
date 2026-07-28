@@ -30,11 +30,12 @@ from pydantic import BaseModel
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 MODEL_DIR = Path(os.getenv("SAFE_MODEL_DIR", "models/checkpoints/module1_ce"))
+# HF repo id 사용 시 로드할 커밋을 고정 (재현성·롤백 안전). 미지정이면 main HEAD.
+# 로컬 경로 SAFE_MODEL_DIR이면 무시된다.
 MODEL_REVISION = os.getenv("SAFE_MODEL_REVISION") or None
-# 2026-07-08 leak-free binary + AI-Hub in-domain 모델 실측 운영점.
-# 배포별 환경변수로 언제든 재보정 가능하다.
-THRESHOLD = float(os.getenv("SAFE_FLAG_THRESHOLD", "0.66"))
-THRESHOLD_MINOR = float(os.getenv("SAFE_FLAG_THRESHOLD_MINOR", "0.50"))
+# 이진 정상/주의 모델 운영점. 배포별 환경변수로 재보정 가능하다.
+THRESHOLD = float(os.getenv("SAFE_FLAG_THRESHOLD", "0.5"))
+THRESHOLD_MINOR = float(os.getenv("SAFE_FLAG_THRESHOLD_MINOR", "0.35"))
 MAX_LENGTH = int(os.getenv("SAFE_MAX_LENGTH", "128"))
 
 # 모델 헤드 크기에 맞춰 기동 시 결정 (이진 2 = 정상/주의, 4-class = 정상/주의/경고/긴급).
@@ -46,7 +47,7 @@ LABELS_BY_N = {2: ["정상", "주의"], 4: ["정상", "주의", "경고", "긴�
 # 학습 시드(Unsmile/KOLD)가 혐오표현 중심이라 금전 사기 커버리지가 약함(스모크에서
 # risk_prob 0.07 확인). 모델 판정에 OR로만 결합 — 플래그를 추가할 뿐 해제하지 않으므로
 # 재현율만 올라감. 오탐 트레이드오프와 함께 보고서에 하이브리드 구성으로 명시.
-RULE_ASSIST = os.getenv("SAFE_RULE_ASSIST", "1") == "1"
+RULE_ASSIST = os.getenv("SAFE_RULE_ASSIST", "0") == "1"
 
 _MONEY = r"(돈|현금|계좌\s*번호|계좌|송금|입금|이체|상품권|기프트\s*카드|문상|코인|비트코인|수익금)"
 _ACTION = r"(알려|보내|빌려|부쳐|넣어|이체|입금|찍어|줘|주면|필요|급하)"
@@ -76,6 +77,8 @@ async def lifespan(app: FastAPI):
     n = int(model.config.num_labels)
     _state["labels"] = LABELS_BY_N.get(n, [str(i) for i in range(n)])
     _state["num_labels"] = n
+    # HF hub 로드 시 실제 해석된 커밋 SHA. 로컬 경로면 None → 요청값으로 폴백.
+    _state["revision"] = getattr(model.config, "_commit_hash", None) or MODEL_REVISION
     _infer("워밍업 문장입니다.")  # 첫 요청 지연 방지
     yield
     _state.clear()
@@ -121,7 +124,7 @@ async def health():
     return {
         "status": "ok",
         "model": str(MODEL_DIR),
-        "revision": MODEL_REVISION,
+        "revision": _state.get("revision"),
         "loaded": "model" in _state,
         "num_labels": _state.get("num_labels"),
         "labels": _state.get("labels"),

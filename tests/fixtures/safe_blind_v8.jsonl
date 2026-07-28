@@ -1,0 +1,40 @@
+{"id":"V8N01","label":0,"slice":"warm_normal","receiver_is_minor":false,"text":"오늘 일이 많았다면 저녁은 간단히 먹고 일찍 쉬어도 괜찮아요."}
+{"id":"V8N02","label":0,"slice":"warm_normal","receiver_is_minor":true,"text":"시험 결과가 아쉬워도 네가 노력한 과정은 사라지지 않아."}
+{"id":"V8N03","label":0,"slice":"warm_normal","receiver_is_minor":false,"text":"걱정되는 일이 있으면 믿을 만한 사람과 천천히 이야기해 봐요."}
+{"id":"V8N04","label":0,"slice":"warm_normal","receiver_is_minor":true,"text":"새 학기에 어색하면 쉬는 시간에 먼저 인사부터 해 보자."}
+{"id":"V8N05","label":0,"slice":"accessibility_help","receiver_is_minor":false,"text":"예약 안내를 문자와 큰 글씨 파일 두 가지로 보내 드릴게요."}
+{"id":"V8N06","label":0,"slice":"accessibility_help","receiver_is_minor":true,"text":"수업 영상을 다시 볼 수 있게 자막이 있는 링크를 올려 둘게."}
+{"id":"V8N07","label":0,"slice":"accessibility_help","receiver_is_minor":false,"text":"휠체어 좌석 가까이에 동행인 자리도 함께 마련했습니다."}
+{"id":"V8N08","label":0,"slice":"accessibility_help","receiver_is_minor":true,"text":"필요하면 문제를 한 문장씩 나눠서 읽어 줄게."}
+{"id":"V8N09","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"금융 알림은 문자 속 주소 대신 은행 앱 알림함에서 확인하세요."}
+{"id":"V8N10","label":0,"slice":"security_benign","receiver_is_minor":true,"text":"게임 계정이 이상하면 비밀번호를 바꾸고 보호자에게 알려."}
+{"id":"V8N11","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"모르는 사람이 신분증 사진을 요구하면 보내지 말고 기관에 확인하세요."}
+{"id":"V8N12","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"중고 거래 대금은 플랫폼의 안전결제 절차로만 주고받으세요."}
+{"id":"V8N13","label":0,"slice":"social_work","receiver_is_minor":false,"text":"회의에서 나온 의견은 익명으로 정리해 모두에게 공유하겠습니다."}
+{"id":"V8N14","label":0,"slice":"social_work","receiver_is_minor":true,"text":"조별 활동에서 불편한 점이 있으면 담임 선생님께 말해도 돼."}
+{"id":"V8N15","label":0,"slice":"social_work","receiver_is_minor":false,"text":"업무 인수인계는 문서로 남겨서 다음 담당자가 볼 수 있게 해 주세요."}
+{"id":"V8N16","label":0,"slice":"social_work","receiver_is_minor":true,"text":"친구가 놀리는 말로 힘들어하면 믿을 수 있는 어른에게 도움을 청하자."}
+{"id":"V8N17","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"낯선 단체 채팅방 초대는 들어가기 전에 보호자와 상의하자."}
+{"id":"V8N18","label":0,"slice":"benign_guidance","receiver_is_minor":false,"text":"직장에서 갈등이 생기면 사실을 기록하고 정식 상담 창구를 이용하세요."}
+{"id":"V8N19","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"누군가 편견 섞인 말을 하면 혼자 견디지 말고 선생님에게 알려."}
+{"id":"V8N20","label":0,"slice":"benign_guidance","receiver_is_minor":false,"text":"온라인에서 모욕적인 글을 보면 캡처해 두고 신고 절차를 확인하세요."}
+{"id":"V8R01","label":1,"slice":"threat_violence","receiver_is_minor":false,"text":"오늘 안에 돈을 안 보내면 네 가게에 찾아가서 난장판을 만들겠다."}
+{"id":"V8R02","label":1,"slice":"threat_violence","receiver_is_minor":true,"text":"선생님께 말하면 네 동생까지 가만두지 않겠어."}
+{"id":"V8R03","label":1,"slice":"threat_violence","receiver_is_minor":false,"text":"내 연락을 피하면 집 앞에서 기다리다가 무슨 일이 날지 몰라."}
+{"id":"V8R04","label":1,"slice":"threat_violence","receiver_is_minor":true,"text":"다음 쉬는 시간에 혼자 나오면 네 얼굴을 망가뜨려 놓을 거야."}
+{"id":"V8R05","label":1,"slice":"digital_extortion","receiver_is_minor":false,"text":"네 휴대폰 자료를 회사에 뿌리기 전에 가상화폐부터 보내."}
+{"id":"V8R06","label":1,"slice":"digital_extortion","receiver_is_minor":true,"text":"내가 가진 대화 녹음 공개하기 싫으면 매주 돈을 내."}
+{"id":"V8R07","label":1,"slice":"digital_extortion","receiver_is_minor":false,"text":"컴퓨터를 못 쓰게 잠가 뒀으니 복구비를 내 계좌로 입금해."}
+{"id":"V8R08","label":1,"slice":"digital_extortion","receiver_is_minor":true,"text":"사진을 반 친구들한테 보내기 전에 네가 시키는 심부름을 해."}
+{"id":"V8R09","label":1,"slice":"workplace_harassment","receiver_is_minor":false,"text":"회식에 안 나오면 다음 달 근무표에서 네 이름을 빼 버리겠다."}
+{"id":"V8R10","label":1,"slice":"workplace_harassment","receiver_is_minor":false,"text":"내 지시를 거절하면 네 실수라고 소문내서 이 팀에 못 있게 할 거야."}
+{"id":"V8R11","label":1,"slice":"workplace_harassment","receiver_is_minor":false,"text":"야근을 못 한다고? 그러면 승진은 포기한 걸로 알고 매일 공개적으로 망신 줄게."}
+{"id":"V8R12","label":1,"slice":"workplace_harassment","receiver_is_minor":false,"text":"내 개인 심부름을 안 하면 계약 연장은 기대하지 마."}
+{"id":"V8R13","label":1,"slice":"hate_abuse","receiver_is_minor":false,"text":"네 출신 지역 사람은 여기 있을 자격 없으니 당장 나가."}
+{"id":"V8R14","label":1,"slice":"hate_abuse","receiver_is_minor":true,"text":"장애가 있으면서 같은 조에 끼려 하지 말고 혼자 해."}
+{"id":"V8R15","label":1,"slice":"hate_abuse","receiver_is_minor":false,"text":"그 종교를 믿는 사람은 믿을 수 없으니 모임에서 쫓아내자."}
+{"id":"V8R16","label":1,"slice":"hate_abuse","receiver_is_minor":true,"text":"너희 나라 사람들은 다 문제니까 학교에 오지 마."}
+{"id":"V8R17","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"퇴근 뒤 누구를 만나는지 사진으로 찍어 매일 내게 제출해."}
+{"id":"V8R18","label":1,"slice":"coercive_control","receiver_is_minor":true,"text":"내가 허락할 때까지 친구들과 연락하지 말고 채팅도 보여 줘."}
+{"id":"V8R19","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"위치 공유를 끄면 네 가족에게 네 비밀을 전부 알리겠다."}
+{"id":"V8R20","label":1,"slice":"coercive_control","receiver_is_minor":true,"text":"내 말을 따르려면 휴대폰 잠금 화면을 지금 영상으로 보여 줘."}

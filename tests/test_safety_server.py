@@ -39,6 +39,6 @@ def test_four_class_response_remains_supported(monkeypatch) -> None:
 
 def test_health_exposes_calibration() -> None:
     body = asyncio.run(safety.health())
-    assert body["threshold"] == 0.66
-    assert body["threshold_minor"] == 0.50
+    assert body["threshold"] == safety.THRESHOLD
+    assert body["threshold_minor"] == safety.THRESHOLD_MINOR
     assert "revision" in body

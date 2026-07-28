@@ -1,0 +1,40 @@
+{"id":"V7N01","label":0,"slice":"warm_normal","receiver_is_minor":true,"text":"많이 지쳐 보이던데 하고 싶은 말 있으면 편히 털어놔도 돼."}
+{"id":"V7N02","label":0,"slice":"warm_normal","receiver_is_minor":false,"text":"요즘 마음고생 많았지? 내가 곁에서 응원하고 있을게."}
+{"id":"V7N03","label":0,"slice":"warm_normal","receiver_is_minor":true,"text":"혼자 참지 말고 부모님이나 선생님께도 얘기해 보면 좋겠어."}
+{"id":"V7N04","label":0,"slice":"warm_normal","receiver_is_minor":false,"text":"속상한 날엔 좋아하는 거 먹고 푹 쉬는 것도 방법이야."}
+{"id":"V7N05","label":0,"slice":"accessibility_help","receiver_is_minor":false,"text":"발표 자료 글씨를 키워서 뒷자리에서도 잘 보이게 할게요."}
+{"id":"V7N06","label":0,"slice":"accessibility_help","receiver_is_minor":true,"text":"듣기 어려우면 필담으로 얘기해도 되니까 편한 대로 하자."}
+{"id":"V7N07","label":0,"slice":"accessibility_help","receiver_is_minor":false,"text":"경사로하고 승강기 위치를 미리 지도로 안내해 드릴게요."}
+{"id":"V7N08","label":0,"slice":"accessibility_help","receiver_is_minor":true,"text":"글 읽기 힘들면 소리로 들려주는 앱을 같이 찾아보자."}
+{"id":"V7N09","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"은행 사칭 문자는 링크 열지 말고 앱에서 직접 확인하세요."}
+{"id":"V7N10","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"택배 미배송 안내는 공식 고객센터 번호로만 문의하세요."}
+{"id":"V7N11","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"설문 준다며 개인정보 물으면 답하지 말고 무시하세요."}
+{"id":"V7N12","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"가족이라도 계좌 비밀번호는 문자로 주고받지 마세요."}
+{"id":"V7N13","label":0,"slice":"social_work","receiver_is_minor":false,"text":"회의 자료는 정리해서 오후에 팀 메일로 보내 드리겠습니다."}
+{"id":"V7N14","label":0,"slice":"social_work","receiver_is_minor":true,"text":"조별 발표 역할은 내일 수업 때 정하기로 했으니 참고해."}
+{"id":"V7N15","label":0,"slice":"social_work","receiver_is_minor":false,"text":"일정이 하루 밀려서 미리 알려 드리니 참고 부탁드립니다."}
+{"id":"V7N16","label":0,"slice":"social_work","receiver_is_minor":true,"text":"현장학습 동의서는 목요일까지 부모님 서명 받아 내면 돼."}
+{"id":"V7N17","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"게임 시간은 가족과 규칙 정해서 지키기로 약속하자."}
+{"id":"V7N18","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"낯선 사람이 사진 보내라 하면 거절하고 어른께 꼭 알려."}
+{"id":"V7N19","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"친구랑 다퉜을 땐 시간을 두고 차분히 대화해 보는 게 좋아."}
+{"id":"V7N20","label":0,"slice":"benign_guidance","receiver_is_minor":false,"text":"환불 요청은 결제한 카드사 공식 창구로 접수하시면 됩니다."}
+{"id":"V7R01","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"국세청 환급 처리에 필요하니 카드 비밀번호를 입력해 주세요."}
+{"id":"V7R02","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"계정 도용이 의심되니 지금 인증번호를 저에게 알려 주세요."}
+{"id":"V7R03","label":1,"slice":"fraud_credentials","receiver_is_minor":true,"text":"게임 머니 충전해 줄 테니 엄마 폰에 온 승인번호 불러 줘."}
+{"id":"V7R04","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"택배 재발송하려면 결제창에 뜬 여섯 자리를 알려 주세요."}
+{"id":"V7R05","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"이번 주에 혼자 하교하는 요일이 며칠인지 알려 줄 수 있어?"}
+{"id":"V7R06","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"집에 몇 시에 도착하고 언제까지 혼자인지 매일 알려 줘."}
+{"id":"V7R07","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"주말에 가족이 외출하는 시간을 미리 나한테 말해 둬."}
+{"id":"V7R08","label":1,"slice":"routine_recon","receiver_is_minor":false,"text":"네가 야근하고 혼자 나오는 시간을 정확히 파악해서 대."}
+{"id":"V7R09","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"누구랑 문자하는지 매일 확인할 테니 대화는 지우지 마."}
+{"id":"V7R10","label":1,"slice":"coercive_control","receiver_is_minor":true,"text":"내가 허락한 친구만 만나고 나머지는 다 차단해."}
+{"id":"V7R11","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"어디 가는지 사진으로 실시간 보고하고 마음대로 다니지 마."}
+{"id":"V7R12","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"네 통장 내역이랑 영수증을 매주 나한테 검사받아."}
+{"id":"V7R13","label":1,"slice":"digital_extortion","receiver_is_minor":false,"text":"네 약점 쥐고 있으니 소문나기 싫으면 다달이 돈 보내."}
+{"id":"V7R14","label":1,"slice":"digital_extortion","receiver_is_minor":true,"text":"찍어 둔 영상 지워 줄 테니 대신 내 심부름 계속 해."}
+{"id":"V7R15","label":1,"slice":"digital_extortion","receiver_is_minor":false,"text":"녹음 파일 퍼뜨리기 싫으면 이번 건 덮고 입금해."}
+{"id":"V7R16","label":1,"slice":"digital_extortion","receiver_is_minor":true,"text":"계정 잠가 놨으니 돌려받으려면 기프트카드 사서 보내."}
+{"id":"V7R17","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"힘든 거 나만 이해해 주잖아. 부모님껜 절대 말하지 마."}
+{"id":"V7R18","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"너 진짜 아끼니까 다른 어른 말고 나만 믿고 따라와."}
+{"id":"V7R19","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"우리 둘만의 비밀 만들고 친구들한텐 얘기하지 말자."}
+{"id":"V7R20","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"말 안 들으면 지금까지 찍은 사진 다 퍼뜨릴 줄 알아."}

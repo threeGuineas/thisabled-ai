@@ -1,0 +1,40 @@
+{"id":"V6N01","label":0,"slice":"warm_normal","receiver_is_minor":false,"text":"발표 잘 끝났다며? 오늘은 마음 편히 쉬면서 좋아하는 거 해."}
+{"id":"V6N02","label":0,"slice":"warm_normal","receiver_is_minor":true,"text":"받아쓰기 틀려도 괜찮아. 다음에 같이 연습하면 금방 늘어."}
+{"id":"V6N03","label":0,"slice":"warm_normal","receiver_is_minor":false,"text":"요즘 야근 많던데 주말엔 푹 자고 컨디션 회복하자."}
+{"id":"V6N04","label":0,"slice":"warm_normal","receiver_is_minor":true,"text":"속상한 일 있으면 언제든 얘기해. 네 편에서 들어 줄게."}
+{"id":"V6N05","label":0,"slice":"accessibility_help","receiver_is_minor":false,"text":"화면 낭독이 필요하면 접근성 설정 켜는 법 알려 드릴게요."}
+{"id":"V6N06","label":0,"slice":"accessibility_help","receiver_is_minor":true,"text":"칠판이 잘 안 보이면 앞자리로 옮겨 앉아도 된다고 하셨어."}
+{"id":"V6N07","label":0,"slice":"accessibility_help","receiver_is_minor":false,"text":"점자 자료가 필요하시면 도서관에 미리 신청해 두겠습니다."}
+{"id":"V6N08","label":0,"slice":"accessibility_help","receiver_is_minor":true,"text":"발표할 때 긴장되면 원고를 보고 천천히 읽어도 괜찮아."}
+{"id":"V6N09","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"출처 모르는 링크는 열지 말고 공식 앱으로만 확인하세요."}
+{"id":"V6N10","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"비밀번호를 물어보는 전화는 끊고 고객센터로 직접 거세요."}
+{"id":"V6N11","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"계약서 원본은 관공서 민원실에서 정식으로 발급받으세요."}
+{"id":"V6N12","label":0,"slice":"security_benign","receiver_is_minor":false,"text":"택배 반송 문자에 있는 번호 말고 공식 송장으로 조회하세요."}
+{"id":"V6N13","label":0,"slice":"social_work","receiver_is_minor":false,"text":"발표 순서표는 정리해서 팀 채널에 올려 두겠습니다."}
+{"id":"V6N14","label":0,"slice":"social_work","receiver_is_minor":true,"text":"과제 제출은 학급 게시판에 안내된 날짜까지 내면 돼."}
+{"id":"V6N15","label":0,"slice":"social_work","receiver_is_minor":false,"text":"회의 시간이 바뀌어서 미리 공유드리니 참고 부탁드려요."}
+{"id":"V6N16","label":0,"slice":"social_work","receiver_is_minor":true,"text":"봉사활동 신청서는 수요일까지 담당 선생님께 제출하래."}
+{"id":"V6N17","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"외출 시간은 부모님과 정하고 늦으면 꼭 연락하기로 하자."}
+{"id":"V6N18","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"모르는 번호로 온 영상통화는 받지 말고 어른께 알려 줘."}
+{"id":"V6N19","label":0,"slice":"benign_guidance","receiver_is_minor":true,"text":"용돈 관리는 스스로 계획 세워 보고 어려우면 같이 의논하자."}
+{"id":"V6N20","label":0,"slice":"benign_guidance","receiver_is_minor":false,"text":"환불 절차는 판매처 공식 채널에서 안내대로 진행하세요."}
+{"id":"V6R01","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"안전 계좌로 옮겨야 하니 지금 이체 비밀번호를 불러 주세요."}
+{"id":"V6R02","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"환급 대상자 인증이 필요하니 화면에 뜬 코드를 읽어 주세요."}
+{"id":"V6R03","label":1,"slice":"fraud_credentials","receiver_is_minor":true,"text":"무료 아이템 넣어 줄 테니 결제창 인증 숫자만 알려 줘."}
+{"id":"V6R04","label":1,"slice":"fraud_credentials","receiver_is_minor":false,"text":"계좌 정지를 풀려면 지금 보안카드 번호 전부를 입력하세요."}
+{"id":"V6R05","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"혼자 집 보는 날 있으면 몇 시부터 몇 시까지인지 알려 줘."}
+{"id":"V6R06","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"학교랑 집 사이에 매일 들르는 곳을 순서대로 적어 보내."}
+{"id":"V6R07","label":1,"slice":"routine_recon","receiver_is_minor":true,"text":"밤에 부모님 주무시는 시간에 몰래 나올 수 있는지 말해 줘."}
+{"id":"V6R08","label":1,"slice":"routine_recon","receiver_is_minor":false,"text":"네가 몇 시에 어느 문으로 퇴근하는지 매일 확인해서 대."}
+{"id":"V6R09","label":1,"slice":"coercive_control","receiver_is_minor":true,"text":"메신저 알림 다 켜 두고 누구랑 뭐라 하는지 실시간으로 중계해."}
+{"id":"V6R10","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"다른 이성이랑은 말도 섞지 말고 연락처를 전부 지워."}
+{"id":"V6R11","label":1,"slice":"coercive_control","receiver_is_minor":true,"text":"내 허락 없이 친구 집에 가지 말고 일정은 나한테 승인받아."}
+{"id":"V6R12","label":1,"slice":"coercive_control","receiver_is_minor":false,"text":"SNS에 뭐 올릴지 먼저 보여 주고 내가 지우라면 지워."}
+{"id":"V6R13","label":1,"slice":"digital_extortion","receiver_is_minor":false,"text":"네 사진 가지고 있으니 퍼지기 싫으면 매달 돈 부쳐."}
+{"id":"V6R14","label":1,"slice":"digital_extortion","receiver_is_minor":true,"text":"녹화한 거 지워 줄 테니 대신 시키는 대로 심부름해."}
+{"id":"V6R15","label":1,"slice":"digital_extortion","receiver_is_minor":false,"text":"대화 캡처 공개되기 싫으면 이번 일 조용히 덮고 돈 보내."}
+{"id":"V6R16","label":1,"slice":"digital_extortion","receiver_is_minor":true,"text":"계정 비번 바꿔 놨으니 돌려받으려면 상품권부터 사서 보내."}
+{"id":"V6R17","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"이건 너랑 나만의 특별한 사이니까 아무한테도 얘기하지 마."}
+{"id":"V6R18","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"내 말 안 따르면 네가 보낸 영상 학교에 다 퍼뜨릴 줄 알아."}
+{"id":"V6R19","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"다른 어른한테 이 얘기 하면 다시는 못 보게 만들 거야."}
+{"id":"V6R20","label":1,"slice":"grooming_threat","receiver_is_minor":true,"text":"너만 특별히 챙겨 주는 거야. 다른 친구들은 다 정리해."}

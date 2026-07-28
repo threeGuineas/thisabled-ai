@@ -1,4 +1,5 @@
 transformers==4.46.3
+huggingface-hub==0.36.2
 sentence-transformers==3.3.1
 lightgbm==4.5.0
 optuna==4.1.0
@@ -7,6 +8,7 @@ fairlearn==0.11.0
 wandb==0.18.7
 mlflow==2.18.0        # 모든 run 자동 로깅 (project_facts 재현성 규약)
 datasketch==1.6.5     # MinHash LSH 시드↔합성 중복 제거 (누수 차단)
+datasets>=3.0,<4.0    # K-MHaS의 Hugging Face dataset script 호환
 koreanize-matplotlib==0.1.1
 kiwipiepy==0.20.1
 tenacity==9.0.0

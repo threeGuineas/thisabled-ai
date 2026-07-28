@@ -1,0 +1,43 @@
+# Module ① 이진 재학습 — v6 라운드 (외부 데이터셋 R1: DKTC + K-MHaS + APEACH)
+# 근거: docs/safe_데이터셋_학습적용_플랜.md (R1 한국어 즉시 트랙, 번역 불필요)
+# 누적: v5 하드케이스 ⊇ + 신규 3소스. 신규 소스는 scripts/adapt_external_datasets.py 로
+#       홀드아웃(aihub/beep)+소비 blind(v1..v7)와 dedup 완료된 jsonl.
+model:
+  name: "beomi/KcELECTRA-base-v2022"
+  num_labels: 2
+  max_length: 128
+  dropout: 0.1
+  checkpoint_dir: "models/checkpoints/module1_binary_hardcases_v6"
+data:
+  binary: true
+  # PAN12 predator (predator만 필터) — 전량 주의
+  extra_caution_jsonl: ["data/synthetic/pan12_translated.jsonl"]
+  extra_caution_filter:
+    split_role: "predator"
+  # 라벨 보존 주입: v5 하드케이스 + DKTC(전량 label=1) + K-MHaS/APEACH(0·1 혼재)
+  extra_train_jsonl:
+    - "data/synthetic/safe_hardcases_v5/train.jsonl"
+    - "data/synthetic/dktc.jsonl"
+    - "data/synthetic/kmhas.jsonl"
+    - "data/synthetic/apeach.jsonl"
+  extra_train_repeat: 1
+training:
+  batch_size: 32
+  eval_batch_size: 64
+  num_epochs: 3
+  lr: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  grad_accum_steps: 1
+  fp16: true
+  seed: 42
+loss:
+  type: "ce"
+  focal_gamma: 0.0
+  alpha: [1.0, 1.0]
+stacking:
+  enabled: false
+paths:
+  checkpoint_dir: "models/checkpoints/module1_binary_hardcases_v6"
+  report_dir: "reports/validation_reports/module1_binary_hardcases_v6"
+labels: ["정상", "주의"]
