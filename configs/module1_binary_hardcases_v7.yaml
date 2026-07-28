@@ -1,0 +1,41 @@
+# Module ① 이진 재학습 — v7 라운드 (금전 사기 커버리지 보강)
+# 근거: docs/safe_데이터셋_확장_후보.md §2-A (사기 = 최대 공백, 실데이터 없음)
+# 누적: v6 ⊇ + Gemini 합성 사기(주의) + 경계 반례(정상). 사기 소스는
+#       scripts/build_scam_dataset.py 로 합성→LLM 라벨검수(B2)→dedup 후 생성한다.
+model:
+  name: "beomi/KcELECTRA-base-v2022"
+  num_labels: 2
+  max_length: 128
+  dropout: 0.1
+  checkpoint_dir: "models/checkpoints/module1_binary_hardcases_v7"
+data:
+  binary: true
+  extra_caution_jsonl: ["data/synthetic/pan12_translated.jsonl"]
+  extra_caution_filter:
+    split_role: "predator"
+  # 라벨 보존 주입: v6 소스 + 사기 합성(주의=1 / 경계 반례=0 혼재)
+  extra_train_jsonl:
+    - "data/synthetic/safe_hardcases_v5/train.jsonl"
+    - "data/synthetic/dktc.jsonl"
+    - "data/synthetic/kmhas.jsonl"
+    - "data/synthetic/apeach.jsonl"
+    - "data/synthetic/scam/train.jsonl"
+  extra_train_repeat: 1
+training:
+  batch_size: 32
+  eval_batch_size: 64
+  num_epochs: 3
+  lr: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  grad_accum_steps: 1
+  fp16: true
+  seed: 42
+loss:
+  type: "ce"
+  focal_gamma: 0.0
+  alpha: [1.0, 1.0]
+stacking:
+  enabled: false
+paths:
+  checkpoint_dir: "models/checkpoints/module1_binary_hardcases_v7"
