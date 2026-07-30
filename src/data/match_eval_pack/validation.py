@@ -53,6 +53,7 @@ from src.data.matching_input import (
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 MAX_JSONL_LINE_BYTES = 2 * 1024 * 1024
 MAX_JSONL_RECORDS = 200_000
+NDCG_RANGE_ATOL = 1e-12
 
 
 class LoadedMatchEvalPack:
@@ -714,7 +715,8 @@ def _validate_records(
         for k in (5, 10):
             value = record.get(f"ndcg@{k}")
             if record["metric_included"] and (
-                not _is_finite_number(value) or not 0.0 <= float(value) <= 1.0
+                not _is_finite_number(value)
+                or not -NDCG_RANGE_ATOL <= float(value) <= 1.0 + NDCG_RANGE_ATOL
             ):
                 raise EvalPackIntegrityError("invalid stored query metric")
             if not record["metric_included"] and value is not None:

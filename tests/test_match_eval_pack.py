@@ -27,6 +27,7 @@ from src.data.match_eval_pack import (
     sha256_file,
 )
 from src.data.match_eval_pack.format import (
+    QUERY_METRICS_FILE,
     TEST_USERS_FILE,
     canonical_json_bytes,
     pack_content_sha256,
@@ -177,6 +178,72 @@ def test_eval_pack_rejects_provenance_tampering(tmp_path):
             pack_path,
             expected_pack_sha256=result["eval_pack_sha256"],
         )
+
+
+@pytest.mark.parametrize(
+    ("stored_ndcg", "accepted"),
+    [
+        (1.0000000000000002, True),
+        (1.0 + 2e-12, False),
+    ],
+)
+def test_eval_pack_allows_only_roundoff_past_ndcg_bounds(tmp_path, stored_ndcg, accepted):
+    result = _train_small(tmp_path)
+    pack_path = _pack_path(result)
+    loaded = load_match_eval_pack(
+        pack_path,
+        expected_pack_sha256=result["eval_pack_sha256"],
+    )
+    query_records = list(loaded.query_metric_records)
+    record = next(row for row in query_records if row["metric_included"])
+    record["ndcg@10"] = stored_ndcg
+    query_payload = b"".join(canonical_json_bytes(row) for row in query_records)
+    (pack_path / QUERY_METRICS_FILE).write_bytes(query_payload)
+
+    manifest_path = pack_path / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["files"][QUERY_METRICS_FILE] = {
+        "sha256": hashlib.sha256(query_payload).hexdigest(),
+        "bytes": len(query_payload),
+    }
+    manifest["evaluation"]["metrics"] = {
+        key: float(
+            np.mean([row[key] for row in query_records if row["metric_included"]])
+        )
+        for key in ("ndcg@5", "ndcg@10")
+    }
+    manifest["stages"] = stage_hashes(
+        files=manifest["files"],
+        frame=loaded.frame,
+        user_embeddings=loaded.user_embeddings,
+        text_embeddings=loaded.text_embeddings,
+        columns=manifest["evaluation"]["columns"],
+        model_sha256=manifest["model"]["sha256"],
+        metrics=manifest["evaluation"]["metrics"],
+    )
+    manifest["pack_content_sha256"] = pack_content_sha256(
+        stages=manifest["stages"],
+        model=manifest["model"],
+        files=manifest["files"],
+        evaluation=manifest["evaluation"],
+        provenance_sha256=manifest["provenance_sha256"],
+    )
+    manifest_path.write_bytes(canonical_json_bytes(manifest))
+
+    if accepted:
+        assert (
+            load_match_eval_pack(
+                pack_path,
+                expected_pack_sha256=manifest["pack_content_sha256"],
+            ).query_metric_records[query_records.index(record)]["ndcg@10"]
+            == stored_ndcg
+        )
+    else:
+        with pytest.raises(EvalPackIntegrityError, match="invalid stored query metric"):
+            load_match_eval_pack(
+                pack_path,
+                expected_pack_sha256=manifest["pack_content_sha256"],
+            )
 
 
 def test_external_pack_sha_rejects_self_consistent_forgery(tmp_path):
