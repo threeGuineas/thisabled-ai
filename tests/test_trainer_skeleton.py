@@ -98,3 +98,98 @@ def test_load_extra_binary_train_rejects_non_binary_label(tmp_path):
     (tmp_path / "bad.jsonl").write_text('{"text":"x","label":3}\n')
     with pytest.raises(ValueError, match="binary label"):
         load_extra_binary_train(tmp_path, {"extra_train_jsonl": ["bad.jsonl"]})
+
+
+def test_load_extra_binary_train_requires_configured_approval_manifest(tmp_path):
+    from src.training.trainer import load_extra_binary_train
+
+    (tmp_path / "scam.jsonl").write_text('{"text":"주의 문장","label":1}\n')
+
+    with pytest.raises(FileNotFoundError, match="승인 manifest 없음"):
+        load_extra_binary_train(
+            tmp_path,
+            {
+                "extra_train_jsonl": ["scam.jsonl"],
+                "extra_train_approval_manifests": {
+                    "scam.jsonl": "approval.json",
+                },
+            },
+        )
+
+
+def test_load_extra_binary_train_cannot_bypass_scam_approval_by_omitting_mapping(
+    tmp_path,
+):
+    from src.training.trainer import load_extra_binary_train
+
+    path = tmp_path / "data" / "synthetic" / "scam" / "train.jsonl"
+    path.parent.mkdir(parents=True)
+    path.write_text('{"text":"주의 문장","label":1}\n', encoding="utf-8")
+
+    with pytest.raises(ValueError, match="승인 manifest 설정이 필수"):
+        load_extra_binary_train(
+            tmp_path,
+            {"extra_train_jsonl": ["data/synthetic/scam/train.jsonl"]},
+        )
+
+
+def test_load_extra_binary_train_validates_approval_hashes(tmp_path):
+    import hashlib
+    import json
+
+    from src.training.trainer import load_extra_binary_train
+
+    dataset = tmp_path / "scam.jsonl"
+    dataset.write_text('{"text":"주의 문장","label":1}\n', encoding="utf-8")
+    dataset_sha = hashlib.sha256(dataset.read_bytes()).hexdigest()
+    report = tmp_path / "report.json"
+    report.write_text(
+        json.dumps(
+            {
+                "status": "complete",
+                "final_output": {
+                    "sha256": dataset_sha,
+                    "count": 1,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "approval.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "human_approved": True,
+                "dataset_path": "scam.jsonl",
+                "dataset_sha256": dataset_sha,
+                "row_count": 1,
+                "verification_report_path": "report.json",
+                "verification_report_sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = load_extra_binary_train(
+        tmp_path,
+        {
+            "extra_train_jsonl": ["scam.jsonl"],
+            "extra_train_approval_manifests": {
+                "scam.jsonl": "approval.json",
+            },
+        },
+    )
+    assert result is not None and len(result) == 1
+
+    dataset.write_text('{"text":"승인 후 변조","label":0}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="승인 후 데이터 변경"):
+        load_extra_binary_train(
+            tmp_path,
+            {
+                "extra_train_jsonl": ["scam.jsonl"],
+                "extra_train_approval_manifests": {
+                    "scam.jsonl": "approval.json",
+                },
+            },
+        )

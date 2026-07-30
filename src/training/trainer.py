@@ -5,6 +5,8 @@ Run via ``scripts/train_module1.py`` (locally for smoke, Colab A100 for real tra
 
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -142,6 +144,9 @@ def load_extra_binary_train(project_root: Path, data_cfg: dict[str, Any]) -> pd.
     import pandas as pd
 
     paths = data_cfg.get("extra_train_jsonl") or []
+    approval_manifests = data_cfg.get("extra_train_approval_manifests") or {}
+    if not isinstance(approval_manifests, dict):
+        raise ValueError("data.extra_train_approval_manifests must be a mapping")
     repeat = int(data_cfg.get("extra_train_repeat", 1))
     if repeat < 1:
         raise ValueError("data.extra_train_repeat must be >= 1")
@@ -151,6 +156,23 @@ def load_extra_binary_train(project_root: Path, data_cfg: dict[str, Any]) -> pd.
         path = project_root / rel
         if not path.exists():
             raise FileNotFoundError(f"[extra_train] 필수 경로 없음: {rel}")
+        manifest_rel = approval_manifests.get(rel)
+        canonical_scam_path = project_root / "data/synthetic/scam/train.jsonl"
+        if (
+            path.resolve(strict=False) == canonical_scam_path.resolve(strict=False)
+            and manifest_rel is None
+        ):
+            raise ValueError(
+                "[extra_train] 사기 학습 데이터는 승인 manifest 설정이 필수임: "
+                "data.extra_train_approval_manifests"
+            )
+        if manifest_rel is not None:
+            _validate_extra_train_approval(
+                project_root,
+                dataset_rel=str(rel),
+                dataset_path=path,
+                manifest_rel=str(manifest_rel),
+            )
         with path.open(encoding="utf-8") as file:
             for line_number, line in enumerate(file, 1):
                 if not line.strip():
@@ -179,6 +201,62 @@ def load_extra_binary_train(project_root: Path, data_cfg: dict[str, Any]) -> pd.
         f"label={distribution}"
     )
     return repeated
+
+
+def _validate_extra_train_approval(
+    project_root: Path,
+    *,
+    dataset_rel: str,
+    dataset_path: Path,
+    manifest_rel: str,
+) -> None:
+    """사람 승인 manifest와 데이터·검수 보고서 SHA가 모두 일치하는지 확인한다."""
+
+    manifest_path = project_root / manifest_rel
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"[extra_train] 승인 manifest 없음: {manifest_rel}")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"[extra_train] 승인 manifest 읽기 오류: {manifest_rel}") from exc
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("schema_version") != 1
+        or manifest.get("human_approved") is not True
+        or manifest.get("dataset_path") != dataset_rel
+    ):
+        raise ValueError(f"[extra_train] 승인 manifest 계약 불일치: {manifest_rel}")
+
+    dataset_sha = hashlib.sha256(dataset_path.read_bytes()).hexdigest()
+    row_count = sum(
+        1 for line in dataset_path.read_text(encoding="utf-8").splitlines() if line.strip()
+    )
+    if manifest.get("dataset_sha256") != dataset_sha or manifest.get("row_count") != row_count:
+        raise ValueError(f"[extra_train] 승인 후 데이터 변경 감지: {dataset_rel}")
+
+    report_rel = manifest.get("verification_report_path")
+    if not isinstance(report_rel, str) or not report_rel:
+        raise ValueError(f"[extra_train] 검수 보고서 경로 누락: {manifest_rel}")
+    report_path = project_root / report_rel
+    if not report_path.exists():
+        raise FileNotFoundError(f"[extra_train] 검수 보고서 없음: {report_rel}")
+    report_bytes = report_path.read_bytes()
+    if manifest.get("verification_report_sha256") != hashlib.sha256(report_bytes).hexdigest():
+        raise ValueError(f"[extra_train] 검수 보고서 변경 감지: {report_rel}")
+    try:
+        report = json.loads(report_bytes)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"[extra_train] 검수 보고서 JSON 오류: {report_rel}") from exc
+    if not isinstance(report, dict):
+        raise ValueError(f"[extra_train] 검수 보고서 루트 형식 오류: {report_rel}")
+    final_output = report.get("final_output")
+    if (
+        report.get("status") != "complete"
+        or not isinstance(final_output, dict)
+        or final_output.get("sha256") != dataset_sha
+        or final_output.get("count") != row_count
+    ):
+        raise ValueError(f"[extra_train] 검수 보고서 최종 산출물 불일치: {report_rel}")
 
 
 def build_focal_loss(loss_cfg: dict[str, Any]) -> tuple[FocalLoss, float, list[float] | None]:
