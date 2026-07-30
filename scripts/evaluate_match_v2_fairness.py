@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import pickle
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -35,6 +34,10 @@ from src.data.build_profiles_v2 import (  # noqa: E402
     GenerationConfig,
     generate_population,
     load_allowed_tags,
+)
+from src.data.match_eval_pack import (  # noqa: E402
+    load_current_match_run,
+    load_trusted_model_bundle,
 )
 from src.data.matching_input import (  # noqa: E402
     MatchingInputPolicy,
@@ -123,6 +126,7 @@ def run_fairness(
     *,
     encoder: TextEncoder,
     model_path: Path,
+    expected_model_sha256: str,
     n_users: int = 10_000,
     n_test_queries: int = 1_000,
     n_candidates: int = 20,
@@ -131,12 +135,46 @@ def run_fairness(
     config_path: Path | None = None,
     out_path: Path | None = None,
 ) -> dict[str, Any]:
-    """학습과 동일한 결정적 test split에서 DP·활동량 편향을 측정한다."""
+    """SHA가 확인된 모델로 결정적 test split의 DP·활동량 편향을 측정한다."""
 
+    model_path = Path(model_path)
+    if out_path is not None and out_path.resolve(strict=False) == model_path.resolve(strict=False):
+        raise ValueError("fairness report must not overwrite the model")
+    model_bundle = load_trusted_model_bundle(
+        model_path,
+        expected_model_sha256=expected_model_sha256,
+    )
+    return _run_fairness_with_bundle(
+        encoder=encoder,
+        model_path=model_path,
+        expected_model_sha256=expected_model_sha256,
+        model_bundle=model_bundle,
+        n_users=n_users,
+        n_test_queries=n_test_queries,
+        n_candidates=n_candidates,
+        seed=seed,
+        k=k,
+        config_path=config_path,
+        out_path=out_path,
+    )
+
+
+def _run_fairness_with_bundle(
+    *,
+    encoder: TextEncoder,
+    model_path: Path,
+    expected_model_sha256: str,
+    model_bundle: dict[str, Any],
+    n_users: int,
+    n_test_queries: int,
+    n_candidates: int,
+    seed: int,
+    k: int,
+    config_path: Path | None,
+    out_path: Path | None,
+) -> dict[str, Any]:
     config_path = config_path or DEFAULT_CONFIG_PATH
-    with model_path.open("rb") as handle:
-        bundle = pickle.load(handle)
-    model, columns = bundle["model"], bundle["columns"]
+    model, columns = model_bundle["model"], model_bundle["columns"]
 
     tags = load_allowed_tags(config_path)
     policy = MatchingInputPolicy(allowed_tag_ids=frozenset(tags))
@@ -178,6 +216,10 @@ def run_fairness(
     act_gap = abs(act_sel.get("high", 0.0) - act_sel.get("low", 0.0))
 
     result = {
+        "model": {
+            "path": str(model_path),
+            "sha256": expected_model_sha256,
+        },
         "k": k,
         "n_test_slates": len(slates),
         "ui_mode_selection_rate": ui_sel,
@@ -192,6 +234,15 @@ def run_fairness(
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     return result
+
+
+def _report_overlaps(path: Path, protected: list[Path]) -> bool:
+    report = path.resolve(strict=False)
+    for item in protected:
+        resolved = item.resolve(strict=False)
+        if report == resolved or (item.is_dir() and report.is_relative_to(resolved)):
+            return True
+    return False
 
 
 def _print(result: dict[str, Any]) -> None:
@@ -209,10 +260,18 @@ def _print(result: dict[str, Any]) -> None:
     print(f"  high-low gap = {result['activity_gap']:.4f}  (중앙값 {result['activity_median']})")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=Path)
     parser.add_argument(
-        "--model", type=Path, default=ROOT / "artifacts" / "module2_lambdamart_v2.pkl"
+        "--expected-model-sha256",
+        help="--model 직접 지정 시 필수인 외부 SHA-256; current pointer 사용 시 선택 검증값",
+    )
+    parser.add_argument(
+        "--current-pointer",
+        type=Path,
+        default=ROOT / "artifacts" / "match_v2_current.json",
+        help="--model 미지정 시 사용할 완료 run 포인터",
     )
     parser.add_argument("--n-users", type=int, default=10_000)
     parser.add_argument("--test-queries", type=int, default=1_000)
@@ -224,19 +283,51 @@ def main() -> int:
         type=Path,
         default=ROOT / "reports" / "validation_reports" / "module2" / "fairness_v2.json",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+
+    protected: list[Path]
+    if args.model is not None:
+        if args.expected_model_sha256 is None:
+            parser.error("--model requires --expected-model-sha256")
+        model_path = args.model
+        model_sha256 = args.expected_model_sha256
+        protected = [model_path]
+    else:
+        try:
+            current = load_current_match_run(args.current_pointer)
+        except ValueError as exc:
+            parser.error(f"invalid current MATCH run: {exc}")
+        model_path = current.model_path
+        model_sha256 = current.model_sha256
+        if args.expected_model_sha256 is not None and args.expected_model_sha256 != model_sha256:
+            parser.error("--expected-model-sha256 differs from current pointer")
+        protected = [args.current_pointer, current.run_dir]
+
+    if _report_overlaps(args.out, protected):
+        parser.error("--out must not overwrite or reside inside current model artifacts")
+
+    try:
+        model_bundle = load_trusted_model_bundle(
+            model_path,
+            expected_model_sha256=model_sha256,
+        )
+    except ValueError as exc:
+        parser.error(f"invalid MATCH model: {exc}")
 
     from scripts.train_match_v2 import _build_sbert
 
     encoder = _build_sbert(DEFAULT_CONFIG_PATH)
-    result = run_fairness(
+    result = _run_fairness_with_bundle(
         encoder=encoder,
-        model_path=args.model,
+        model_path=model_path,
+        expected_model_sha256=model_sha256,
+        model_bundle=model_bundle,
         n_users=args.n_users,
         n_test_queries=args.test_queries,
         n_candidates=args.candidates,
         seed=args.seed,
         k=args.k,
+        config_path=None,
         out_path=args.out,
     )
     _print(result)
