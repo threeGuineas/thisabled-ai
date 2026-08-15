@@ -76,8 +76,13 @@ build/
 
 # === 실데이터 평가셋 (AI-Hub/BEEP — 라이선스상 재배포 금지, 로컬 전용) ===
 data/eval/*.jsonl
+# Colab 전달용 번들. data/eval 실데이터를 담고 있어 zip 형태로도 커밋 금지.
+data_bundle*.zip
 
 # === 보고서 산출물 (로컬 보관, 원격 미게시) ===
 reports/**
 !reports/*/
 !reports/*/.gitkeep
+
+# === 회차별 산출물 (로컬 보관 — 보고서·합성 캐시·LLM 생성물) ===
+outputs/
