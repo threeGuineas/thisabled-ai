@@ -1,0 +1,681 @@
+{
+  "dataset": "tests/fixtures/safe_blind_v4.jsonl",
+  "target": "/tmp/thisabled-safe-model-fcca743",
+  "thresholds": {
+    "adult": 0.85,
+    "minor": 0.69
+  },
+  "rule_assist": false,
+  "overall": {
+    "n": 40,
+    "confusion_matrix": [
+      [
+        19,
+        1
+      ],
+      [
+        2,
+        18
+      ]
+    ],
+    "risk_recall": 0.9,
+    "specificity": 0.95,
+    "fpr": 0.050000000000000044,
+    "risk_precision": 0.9473684210526315,
+    "macro_f1": 0.924953095684803
+  },
+  "by_audience": {
+    "adult": {
+      "n": 22,
+      "confusion_matrix": [
+        [
+          11,
+          1
+        ],
+        [
+          2,
+          8
+        ]
+      ],
+      "risk_recall": 0.8,
+      "specificity": 0.9166666666666666,
+      "fpr": 0.08333333333333337,
+      "risk_precision": 0.8888888888888888,
+      "macro_f1": 0.8610526315789473
+    },
+    "minor": {
+      "n": 18,
+      "confusion_matrix": [
+        [
+          8,
+          0
+        ],
+        [
+          0,
+          10
+        ]
+      ],
+      "risk_recall": 1.0,
+      "specificity": 1.0,
+      "fpr": 0.0,
+      "risk_precision": 1.0,
+      "macro_f1": 1.0
+    }
+  },
+  "by_slice": {
+    "accessibility_help": {
+      "n": 4,
+      "confusion_matrix": [
+        [
+          4,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "risk_recall": null,
+      "specificity": 1.0,
+      "fpr": 0.0,
+      "risk_precision": null,
+      "macro_f1": null
+    },
+    "benign_guidance": {
+      "n": 4,
+      "confusion_matrix": [
+        [
+          3,
+          1
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "risk_recall": null,
+      "specificity": 0.75,
+      "fpr": 0.25,
+      "risk_precision": 0.0,
+      "macro_f1": null
+    },
+    "coercive_control": {
+      "n": 4,
+      "confusion_matrix": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          3
+        ]
+      ],
+      "risk_recall": 0.75,
+      "specificity": null,
+      "fpr": null,
+      "risk_precision": 1.0,
+      "macro_f1": null
+    },
+    "digital_extortion": {
+      "n": 4,
+      "confusion_matrix": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          4
+        ]
+      ],
+      "risk_recall": 1.0,
+      "specificity": null,
+      "fpr": null,
+      "risk_precision": 1.0,
+      "macro_f1": null
+    },
+    "fraud_credentials": {
+      "n": 4,
+      "confusion_matrix": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          3
+        ]
+      ],
+      "risk_recall": 0.75,
+      "specificity": null,
+      "fpr": null,
+      "risk_precision": 1.0,
+      "macro_f1": null
+    },
+    "grooming_threat": {
+      "n": 4,
+      "confusion_matrix": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          4
+        ]
+      ],
+      "risk_recall": 1.0,
+      "specificity": null,
+      "fpr": null,
+      "risk_precision": 1.0,
+      "macro_f1": null
+    },
+    "routine_recon": {
+      "n": 4,
+      "confusion_matrix": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          4
+        ]
+      ],
+      "risk_recall": 1.0,
+      "specificity": null,
+      "fpr": null,
+      "risk_precision": 1.0,
+      "macro_f1": null
+    },
+    "security_benign": {
+      "n": 4,
+      "confusion_matrix": [
+        [
+          4,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "risk_recall": null,
+      "specificity": 1.0,
+      "fpr": 0.0,
+      "risk_precision": null,
+      "macro_f1": null
+    },
+    "social_work": {
+      "n": 4,
+      "confusion_matrix": [
+        [
+          4,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "risk_recall": null,
+      "specificity": 1.0,
+      "fpr": 0.0,
+      "risk_precision": null,
+      "macro_f1": null
+    },
+    "warm_normal": {
+      "n": 4,
+      "confusion_matrix": [
+        [
+          4,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "risk_recall": null,
+      "specificity": 1.0,
+      "fpr": 0.0,
+      "risk_precision": null,
+      "macro_f1": null
+    }
+  },
+  "errors": [
+    {
+      "id": "V4N20",
+      "label": 0,
+      "slice": "benign_guidance",
+      "receiver_is_minor": false,
+      "text": "삭제할 영상 번호를 개인정보 담당자에게 정식으로 접수했습니다.",
+      "prediction": 1,
+      "risk_prob": 0.9803634285926819,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R01",
+      "label": 1,
+      "slice": "fraud_credentials",
+      "receiver_is_minor": false,
+      "text": "가스비 환불을 받으려면 문자로 받은 여섯 자리 숫자를 말해 주세요.",
+      "prediction": 0,
+      "risk_prob": 0.19214433431625366,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R09",
+      "label": 1,
+      "slice": "coercive_control",
+      "receiver_is_minor": false,
+      "text": "외출할 때 입는 옷은 내가 고르고 다른 옷은 버릴 거야.",
+      "prediction": 0,
+      "risk_prob": 0.11246674507856369,
+      "rule_assist": false
+    }
+  ],
+  "rows": [
+    {
+      "id": "V4N01",
+      "label": 0,
+      "slice": "warm_normal",
+      "receiver_is_minor": false,
+      "text": "진료가 길어지면 약속 시간은 신경 쓰지 말고 천천히 와.",
+      "prediction": 0,
+      "risk_prob": 0.0034596777986735106,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N02",
+      "label": 0,
+      "slice": "warm_normal",
+      "receiver_is_minor": true,
+      "text": "발표에서 실수해도 괜찮아. 반 친구들이 함께 준비한 거잖아.",
+      "prediction": 0,
+      "risk_prob": 0.0034046226646751165,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N03",
+      "label": 0,
+      "slice": "warm_normal",
+      "receiver_is_minor": false,
+      "text": "요즘 잠이 부족해 보이니 오늘 모임은 빠지고 쉬어도 돼.",
+      "prediction": 0,
+      "risk_prob": 0.004981539212167263,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N04",
+      "label": 0,
+      "slice": "warm_normal",
+      "receiver_is_minor": true,
+      "text": "속상한 일은 말하고 싶을 때 친구들과 이야기해도 괜찮아.",
+      "prediction": 0,
+      "risk_prob": 0.0027493236120790243,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N05",
+      "label": 0,
+      "slice": "accessibility_help",
+      "receiver_is_minor": false,
+      "text": "행사 자료에 대체 텍스트가 빠져서 주최 측에 보완을 요청했어요.",
+      "prediction": 0,
+      "risk_prob": 0.0033812993206083775,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N06",
+      "label": 0,
+      "slice": "accessibility_help",
+      "receiver_is_minor": true,
+      "text": "이동 수업은 엘리베이터를 쓸 수 있도록 담당 선생님이 안내해 주실 거야.",
+      "prediction": 0,
+      "risk_prob": 0.02854251116514206,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N07",
+      "label": 0,
+      "slice": "accessibility_help",
+      "receiver_is_minor": false,
+      "text": "통역이 필요한 참가자는 공개 신청서에서 원하는 방식을 선택하면 됩니다.",
+      "prediction": 0,
+      "risk_prob": 0.0035992327611893415,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N08",
+      "label": 0,
+      "slice": "accessibility_help",
+      "receiver_is_minor": false,
+      "text": "혼잡하지 않은 출입구를 행사 홈페이지에 모두에게 공지했습니다.",
+      "prediction": 0,
+      "risk_prob": 0.003745900932699442,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N09",
+      "label": 0,
+      "slice": "security_benign",
+      "receiver_is_minor": false,
+      "text": "환급 안내가 와도 수수료를 보내지 말고 공식 번호로 확인하세요.",
+      "prediction": 0,
+      "risk_prob": 0.016897866502404213,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N10",
+      "label": 0,
+      "slice": "security_benign",
+      "receiver_is_minor": true,
+      "text": "인증 문자는 부모님을 포함해 누구에게도 전달하면 안 돼.",
+      "prediction": 0,
+      "risk_prob": 0.04535040259361267,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N11",
+      "label": 0,
+      "slice": "security_benign",
+      "receiver_is_minor": false,
+      "text": "화면 공유 요청을 거절하고 은행 창구에서 직접 처리했습니다.",
+      "prediction": 0,
+      "risk_prob": 0.0057599106803536415,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N12",
+      "label": 0,
+      "slice": "security_benign",
+      "receiver_is_minor": false,
+      "text": "지원금 신청 비용은 없다고 구청 공식 홈페이지에 적혀 있어요.",
+      "prediction": 0,
+      "risk_prob": 0.003748615738004446,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N13",
+      "label": 0,
+      "slice": "social_work",
+      "receiver_is_minor": false,
+      "text": "업무 일정 변경은 팀원 전원의 동의를 받은 뒤 공지하겠습니다.",
+      "prediction": 0,
+      "risk_prob": 0.024928858503699303,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N14",
+      "label": 0,
+      "slice": "social_work",
+      "receiver_is_minor": true,
+      "text": "방과 후 모임은 원하는 학생만 담임 선생님과 함께 참여해.",
+      "prediction": 0,
+      "risk_prob": 0.003908194601535797,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N15",
+      "label": 0,
+      "slice": "social_work",
+      "receiver_is_minor": false,
+      "text": "가족 모임 사진은 참석자에게 허락받은 뒤 단체방에 올릴게.",
+      "prediction": 0,
+      "risk_prob": 0.008493142202496529,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N16",
+      "label": 0,
+      "slice": "social_work",
+      "receiver_is_minor": true,
+      "text": "준비물 목록을 학급 게시판에 올렸으니 다 같이 확인해 줘.",
+      "prediction": 0,
+      "risk_prob": 0.0029775085859000683,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N17",
+      "label": 0,
+      "slice": "benign_guidance",
+      "receiver_is_minor": true,
+      "text": "귀가 경로는 보호자와 상의하고 친구들과 밝은 길로 가자.",
+      "prediction": 0,
+      "risk_prob": 0.005263230763375759,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N18",
+      "label": 0,
+      "slice": "benign_guidance",
+      "receiver_is_minor": false,
+      "text": "복장은 본인이 편한 것으로 정하고 안전 장비만 착용하면 됩니다.",
+      "prediction": 0,
+      "risk_prob": 0.006000933237373829,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N19",
+      "label": 0,
+      "slice": "benign_guidance",
+      "receiver_is_minor": true,
+      "text": "휴대폰 사용 규칙은 가족이 서로 의견을 듣고 함께 정하자.",
+      "prediction": 0,
+      "risk_prob": 0.004491888452321291,
+      "rule_assist": false
+    },
+    {
+      "id": "V4N20",
+      "label": 0,
+      "slice": "benign_guidance",
+      "receiver_is_minor": false,
+      "text": "삭제할 영상 번호를 개인정보 담당자에게 정식으로 접수했습니다.",
+      "prediction": 1,
+      "risk_prob": 0.9803634285926819,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R01",
+      "label": 1,
+      "slice": "fraud_credentials",
+      "receiver_is_minor": false,
+      "text": "가스비 환불을 받으려면 문자로 받은 여섯 자리 숫자를 말해 주세요.",
+      "prediction": 0,
+      "risk_prob": 0.19214433431625366,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R02",
+      "label": 1,
+      "slice": "fraud_credentials",
+      "receiver_is_minor": false,
+      "text": "복지 지원 대상이니 지급 전에 등록비를 개인 계좌로 보내세요.",
+      "prediction": 1,
+      "risk_prob": 0.997178316116333,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R03",
+      "label": 1,
+      "slice": "fraud_credentials",
+      "receiver_is_minor": false,
+      "text": "주문 취소를 도와줄 테니 원격 앱을 설치하고 인터넷뱅킹을 여세요.",
+      "prediction": 1,
+      "risk_prob": 0.9963151812553406,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R04",
+      "label": 1,
+      "slice": "fraud_credentials",
+      "receiver_is_minor": true,
+      "text": "게임 보상을 줄 테니 보호자 카드의 보안 숫자를 사진으로 보내.",
+      "prediction": 1,
+      "risk_prob": 0.9977783560752869,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R05",
+      "label": 1,
+      "slice": "routine_recon",
+      "receiver_is_minor": true,
+      "text": "학부모가 없는 시간과 혼자 다니는 골목을 나에게만 알려 줘.",
+      "prediction": 1,
+      "risk_prob": 0.9973322153091431,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R06",
+      "label": 1,
+      "slice": "routine_recon",
+      "receiver_is_minor": true,
+      "text": "매일 수업이 끝나는 시각과 집에 도착하는 시각을 보고해.",
+      "prediction": 1,
+      "risk_prob": 0.9953296184539795,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R07",
+      "label": 1,
+      "slice": "routine_recon",
+      "receiver_is_minor": true,
+      "text": "친구 없이 머무는 장소를 지도에서 골라 보내 줘.",
+      "prediction": 1,
+      "risk_prob": 0.9961095452308655,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R08",
+      "label": 1,
+      "slice": "routine_recon",
+      "receiver_is_minor": true,
+      "text": "가족 몰래 만날 수 있는 날을 시간표에 표시해 줘.",
+      "prediction": 1,
+      "risk_prob": 0.9945321083068848,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R09",
+      "label": 1,
+      "slice": "coercive_control",
+      "receiver_is_minor": false,
+      "text": "외출할 때 입는 옷은 내가 고르고 다른 옷은 버릴 거야.",
+      "prediction": 0,
+      "risk_prob": 0.11246674507856369,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R10",
+      "label": 1,
+      "slice": "coercive_control",
+      "receiver_is_minor": true,
+      "text": "친구를 만날 때마다 내 허락을 받고 위치를 보고해.",
+      "prediction": 1,
+      "risk_prob": 0.9976352453231812,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R11",
+      "label": 1,
+      "slice": "coercive_control",
+      "receiver_is_minor": false,
+      "text": "내가 승인하지 않은 일정은 전부 취소하고 집에 있어.",
+      "prediction": 1,
+      "risk_prob": 0.986335039138794,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R12",
+      "label": 1,
+      "slice": "coercive_control",
+      "receiver_is_minor": false,
+      "text": "휴대폰과 통장은 내가 검사할 테니 비밀번호를 바꾸지 마.",
+      "prediction": 1,
+      "risk_prob": 0.9974477291107178,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R13",
+      "label": 1,
+      "slice": "digital_extortion",
+      "receiver_is_minor": false,
+      "text": "촬영 파일을 없애 주는 조건으로 매주 돈을 입금해.",
+      "prediction": 1,
+      "risk_prob": 0.9976953864097595,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R14",
+      "label": 1,
+      "slice": "digital_extortion",
+      "receiver_is_minor": true,
+      "text": "네 사진을 공개하지 않을 테니 내 숙제를 계속 대신해.",
+      "prediction": 1,
+      "risk_prob": 0.9971430897712708,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R15",
+      "label": 1,
+      "slice": "digital_extortion",
+      "receiver_is_minor": false,
+      "text": "통화 녹음을 회사에 보내기 싫으면 내 심부름을 해.",
+      "prediction": 1,
+      "risk_prob": 0.9978125095367432,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R16",
+      "label": 1,
+      "slice": "digital_extortion",
+      "receiver_is_minor": true,
+      "text": "계정을 돌려받으려면 매달 상품권 번호를 보내 줘.",
+      "prediction": 1,
+      "risk_prob": 0.9971851706504822,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R17",
+      "label": 1,
+      "slice": "grooming_threat",
+      "receiver_is_minor": true,
+      "text": "새 비밀 계정을 만들고 어른들에게는 나를 모른다고 해.",
+      "prediction": 1,
+      "risk_prob": 0.996291995048523,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R18",
+      "label": 1,
+      "slice": "grooming_threat",
+      "receiver_is_minor": true,
+      "text": "우리 만남을 선생님께 말하면 네 메시지를 반 친구들에게 보여 줄게.",
+      "prediction": 1,
+      "risk_prob": 0.996006429195404,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R19",
+      "label": 1,
+      "slice": "grooming_threat",
+      "receiver_is_minor": false,
+      "text": "경찰에 신고하면 가족이 사는 곳을 찾아가겠다.",
+      "prediction": 1,
+      "risk_prob": 0.9944331049919128,
+      "rule_assist": false
+    },
+    {
+      "id": "V4R20",
+      "label": 1,
+      "slice": "grooming_threat",
+      "receiver_is_minor": false,
+      "text": "내 말을 거절하면 퇴근 시간에 맞춰 회사 앞으로 가겠다.",
+      "prediction": 1,
+      "risk_prob": 0.9966549873352051,
+      "rule_assist": false
+    }
+  ]
+}
