@@ -43,7 +43,7 @@ MATCH_BODY = {
     "me": {
         "user_id": "u-me",
         "bio": "영화와 야구를 좋아해요. 일상 이야기 나눌 친구 찾아요.",
-        "tags": ["영화", "걷기"],
+        "tags": ["movie", "walking"],
         "age_band": "25~34세",
         "ui_mode": "visual",
     },
@@ -51,18 +51,24 @@ MATCH_BODY = {
         {
             "user_id": "u-sim",
             "bio": "영화 보는 게 취미예요. 편하게 수다 떨 친구 구해요.",
-            "tags": ["영화", "드라마"],
+            "tags": ["movie", "drama"],
             "age_band": "25~34세",
             "ui_mode": "hearing",
         },
         {
             "user_id": "u-diff",
             "bio": "주식 정보 공유방 운영합니다. 수익 인증 가능.",
-            "tags": ["헬스"],
+            "tags": ["gym"],
             "age_band": "55세 이상",
             "ui_mode": "visual",
         },
-        {"user_id": "u-empty", "bio": "", "tags": [], "age_band": "", "ui_mode": ""},
+        {
+            "user_id": "u-empty",
+            "bio": "",
+            "tags": [],
+            "age_band": "35-44",
+            "ui_mode": "",
+        },
     ],
 }
 
