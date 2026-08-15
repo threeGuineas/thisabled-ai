@@ -148,10 +148,13 @@ INPUT_POLICY = MatchingInputPolicy(
     content_reason_min=_env_float(
         "MATCH_CONTENT_REASON_MIN", float(_SERVING_CONFIG["content_reason_min"])
     ),
-    profile_reason_min=_env_float(
-        "MATCH_COSINE_REASON_MIN", float(_SERVING_CONFIG["profile_reason_min"])
-    ),
     max_reasons=int(_SERVING_CONFIG["max_reasons"]),
+    tag_reason_min_overlap=_env_int(
+        "MATCH_TAG_REASON_MIN_OVERLAP", int(_SERVING_CONFIG["tag_reason_min_overlap"])
+    ),
+    age_reason_max_diff=_env_int(
+        "MATCH_AGE_REASON_MAX_DIFF", int(_SERVING_CONFIG["age_reason_max_diff"])
+    ),
 )
 
 _state: dict = {}

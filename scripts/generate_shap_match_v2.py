@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -60,18 +61,33 @@ FEATURE_REASON: dict[str, str] = {
     "f_authored_cosine": "관심 있는 콘텐츠가 비슷해요",
     "f_liked_authored_cosine": "관심 있는 콘텐츠가 비슷해요",
     "f_common_friend_count": "공통 친구가 있어요",
-    "f_age_band_match": "비슷한 연령대예요",
-    "f_profile_cosine": "소개 내용이 비슷해요",
-    "f_profile_l2": "소개 내용이 비슷해요",
+    # 연령 문구는 f_age_band_match 가 아니라 f_age_diff 에 걸려 있다
+    # (build_recommendation_reasons 의 age_reason_max_diff 판정과 일치).
+    "f_age_diff": "비슷한 연령대예요",
 }
 
 # build_recommendation_reasons 판정에 필요하지만 v2 15열에는 없는 가용성 플래그.
 # 특성 프레임에는 넣고 SHAP 입력에서는 뺀다.
-REASON_SUPPORT_COLUMNS = (
-    "f_profile_available",
-    "f_liked_authored_available",
-    "f_age_band_available",
-)
+REASON_SUPPORT_COLUMNS = ("f_liked_authored_available",)
+
+
+def load_serving_policy(config_path: Path) -> MatchingInputPolicy:
+    """서빙이 실제로 쓰는 사유 임계값으로 정책을 만든다.
+
+    dataclass 기본값을 쓰면 배포값과 어긋난 정합성 수치가 나온다
+    (예: tag_reason_min_overlap 은 config serving 블록에서 온다).
+    """
+
+    with config_path.open(encoding="utf-8") as handle:
+        config = yaml.safe_load(handle)
+    serving = config["serving"]
+    return MatchingInputPolicy(
+        allowed_tag_ids=frozenset(load_allowed_tags(config_path)),
+        content_reason_min=float(serving["content_reason_min"]),
+        max_reasons=int(serving["max_reasons"]),
+        tag_reason_min_overlap=int(serving["tag_reason_min_overlap"]),
+        age_reason_max_diff=int(serving["age_reason_max_diff"]),
+    )
 
 
 def _assert_reason_vocabulary() -> None:
@@ -145,8 +161,7 @@ def build_evaluation_frame(
     기본값은 train_match_v2.py 의 학습 기본값과 맞춰 두었다.
     """
 
-    tags = load_allowed_tags(config_path)
-    policy = MatchingInputPolicy(allowed_tag_ids=frozenset(tags))
+    policy = load_serving_policy(config_path)
     generation_config = GenerationConfig(n_users=n_users, seed=seed)
     as_of = generation_config.as_of
 
@@ -335,8 +350,7 @@ def generate(
     if shap_values.shape != x_v2.shape:
         raise RuntimeError(f"예상치 못한 SHAP 형태: {shap_values.shape} != {x_v2.shape}")
 
-    tags = load_allowed_tags(config_path)
-    policy = MatchingInputPolicy(allowed_tag_ids=frozenset(tags))
+    policy = load_serving_policy(config_path)
     alignment, samples = analyze_reason_alignment(
         shap_values=shap_values,
         x_full=x_full,
@@ -372,6 +386,12 @@ def generate(
                 if hasattr(encoder, "reproducibility_metadata")
                 else {"type": type(encoder).__name__}
             ),
+        },
+        "reason_policy": {
+            "content_reason_min": policy.content_reason_min,
+            "tag_reason_min_overlap": policy.tag_reason_min_overlap,
+            "age_reason_max_diff": policy.age_reason_max_diff,
+            "max_reasons": policy.max_reasons,
         },
         "global_importance": global_importance,
         "unexposed_feature_share": unexposed,

@@ -94,8 +94,8 @@ def test_global_importance_shares_sum_to_one():
 def test_alignment_counts_displayed_reason_backed_by_positive_shap():
     v2_columns = ["f_tag_overlap", "f_common_friend_count"]
     frame_columns = [*v2_columns, "f_profile_available"]
-    # 두 신호 모두 켜진 페어 하나.
-    x_full = np.array([[2.0, 1.0, 0.0]])
+    # 두 신호 모두 켜진 페어 하나 (태그는 tag_reason_min_overlap=3 을 만족해야 한다).
+    x_full = np.array([[3.0, 1.0, 0.0]])
     # 태그는 양(+) 기여, 공통 친구는 음(-) 기여.
     shap_values = np.array([[0.9, -0.4]])
 

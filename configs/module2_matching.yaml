@@ -69,8 +69,13 @@ serving:
   tag_weight: 0.3
   age_weight: 0.2
   content_reason_min: 0.65
-  profile_reason_min: 0.5
   max_reasons: 4
+  # 추천 사유가 모델 기여와 어긋나지 않도록 잡은 하한 (artifacts/match_v2_shap.json 근거).
+  # 태그 겹침 1개는 추천 94.7%에 문구가 붙으면서 SHAP 뒷받침률 57.3%,
+  # 3개면 노출 42.3%에 뒷받침률 97.7%.
+  tag_reason_min_overlap: 3
+  # 연령 문구는 f_age_band_match(기여 4.2%)가 아니라 f_age_diff(31.0%)에 건다.
+  age_reason_max_diff: 5
 
 features:
   # 서빙 스키마 스위치. legacy-v1(구형 3열 pickle + 투영 shim) | match-input-v2(신규 15열).

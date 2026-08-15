@@ -90,7 +90,6 @@ ALLOWED_RECOMMENDATION_REASONS = frozenset(
         "관심 있는 콘텐츠가 비슷해요",
         "공통 친구가 있어요",
         "비슷한 연령대예요",
-        "소개 내용이 비슷해요",
     }
 )
 
@@ -135,8 +134,14 @@ class MatchingInputPolicy:
     allowed_ui_modes: frozenset[str] = frozenset({"visual", "hearing", "developmental"})
     allowed_content_sources: frozenset[str] = frozenset({"post", "comment"})
     content_reason_min: float = 0.65
-    profile_reason_min: float = 0.65
     max_reasons: int = 4
+    # 화면 문구가 모델 기여와 어긋나지 않도록 잡은 하한.
+    # artifacts/match_v2_shap.json 기준으로 겹침 1개는 추천의 94.7%에 문구가 붙으면서
+    # SHAP 뒷받침률이 57.3%였고, 3개로 올리면 노출 42.3%에 뒷받침률 97.7%가 된다.
+    tag_reason_min_overlap: int = 3
+    # 연령 문구는 f_age_band_match(기여 4.2%)가 아니라 실제 최대 기여 특성인
+    # f_age_diff(31.0%)에 건다. 5세 이내에서 SHAP 뒷받침률 100%.
+    age_reason_max_diff: int = 5
 
     def __post_init__(self) -> None:
         positive_fields = (
@@ -152,13 +157,15 @@ class MatchingInputPolicy:
             "embedding_batch_size",
             "rejection_cooldown_days",
             "max_reasons",
+            "tag_reason_min_overlap",
+            "age_reason_max_diff",
         )
         if any(getattr(self, name) <= 0 for name in positive_fields):
             raise ValueError("MATCH policy limits must be positive")
         if not 0.0 <= self.content_reason_min <= 1.0:
             raise ValueError("content_reason_min must be between 0 and 1")
-        if not 0.0 <= self.profile_reason_min <= 1.0:
-            raise ValueError("profile_reason_min must be between 0 and 1")
+        if self.tag_reason_min_overlap > self.max_tags:
+            raise ValueError("tag_reason_min_overlap cannot exceed max_tags")
 
 
 @dataclass(frozen=True, slots=True)
@@ -688,7 +695,7 @@ def build_recommendation_reasons(
 
     active_policy = policy or MatchingInputPolicy()
     reasons: list[str] = []
-    if features.get("f_tag_overlap", 0.0) > 0:
+    if features.get("f_tag_overlap", 0.0) >= active_policy.tag_reason_min_overlap:
         reasons.append("관심사가 비슷해요")
 
     content_similar = any(
@@ -704,13 +711,14 @@ def build_recommendation_reasons(
         reasons.append("관심 있는 콘텐츠가 비슷해요")
     if features.get("f_common_friend_count", 0.0) > 0:
         reasons.append("공통 친구가 있어요")
-    if features.get("f_age_band_available", 1.0) > 0 and features.get("f_age_band_match", 0.0) > 0:
-        reasons.append("비슷한 연령대예요")
     if (
-        features.get("f_profile_available", 0.0) > 0
-        and features.get("f_profile_cosine", 0.0) >= active_policy.profile_reason_min
+        features.get("f_age_available", 0.0) > 0
+        and features.get("f_age_diff", float("inf")) <= active_policy.age_reason_max_diff
     ):
-        reasons.append("소개 내용이 비슷해요")
+        reasons.append("비슷한 연령대예요")
+    # "소개 내용이 비슷해요"는 폐기했다. 임계값 0.5에서 추천의 92.5%에 붙으면서 SHAP
+    # 뒷받침률이 36.1%였고, 뒷받침률을 올리려 0.75로 높이면 노출이 6.5%로 떨어져
+    # 어느 값에서도 정보 가치가 없었다(artifacts/match_v2_shap.json).
 
     safe_reasons = [reason for reason in reasons if reason in ALLOWED_RECOMMENDATION_REASONS]
     return safe_reasons[: active_policy.max_reasons]

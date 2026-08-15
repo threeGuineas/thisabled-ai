@@ -116,7 +116,8 @@ MATCH_HF_REVISION=ecb31a428e74dfc393617a6a4a95ecc4cb7e6d67
 | `SAFE_RULE_ASSIST` | 0 | 금전 사기 규칙 보조 레이어 on/off (OR 결합). 최신 이진 모델은 기본 비활성 |
 | `SAFE_MAX_LENGTH` | 128 | 토크나이저 max_length |
 | `TORCH_NUM_THREADS` | 2 | CPU 스레드 |
-| `MATCH_COSINE_REASON_MIN` | 0.5 | "소개 내용이 비슷해요" 사유 최소 코사인 |
+| `MATCH_TAG_REASON_MIN_OVERLAP` | 3 | "관심사가 비슷해요" 사유 최소 태그 겹침 개수 |
+| `MATCH_AGE_REASON_MAX_DIFF` | 5 | "비슷한 연령대예요" 사유 최대 나이 차이(세) |
 | `MATCH_CONFIG_PATH` | `configs/module2_matching.yaml` | 입력 정책·TAG-01·특성 스키마 설정 파일 |
 | `MATCH_ALLOWED_TAG_IDS` | 설정 파일의 43개 코드 | 쉼표로 구분한 TAG-01 허용 코드 전체 재정의 |
 | `MATCH_FEATURE_SCHEMA` | `legacy-v1` | 랭커 스키마 `legacy-v1`\|`match-input-v2`. 전환·롤백 스위치 |

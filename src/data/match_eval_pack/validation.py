@@ -339,7 +339,7 @@ def _validated_policy(provenance: Mapping[str, Any]) -> MatchingInputPolicy:
         not _is_integer(values[name]) or values[name] <= 0 for name in positive_integer_fields
     ) or any(
         not _is_finite_number(values[name]) or not 0.0 <= float(values[name]) <= 1.0
-        for name in ("content_reason_min", "profile_reason_min")
+        for name in ("content_reason_min",)
     ):
         raise EvalPackIntegrityError("invalid policy limits")
     for name in ("allowed_tag_ids", "allowed_ui_modes", "allowed_content_sources"):

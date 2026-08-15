@@ -11,6 +11,7 @@ from src.data.matching_input import (
     AGE_BAND_14_18,
     AGE_BAND_19_24,
     AGE_BAND_25_34,
+    ALLOWED_RECOMMENDATION_REASONS,
     CandidateInput,
     CandidateRelationship,
     ContentSignal,
@@ -468,9 +469,10 @@ def test_no_signal_returns_insufficient_signal(policy: MatchingInputPolicy) -> N
 def test_recommendation_reasons_are_generalized_and_ui_mode_is_never_exposed() -> None:
     reasons = build_recommendation_reasons(
         {
-            "f_tag_overlap": 2.0,
+            "f_tag_overlap": 3.0,
             "f_common_friend_count": 1.0,
-            "f_age_band_match": 1.0,
+            "f_age_available": 1.0,
+            "f_age_diff": 2.0,
             "f_liked_cosine": 0.9,
             "f_liked_available": 1.0,
             "f_profile_cosine": 0.8,
@@ -486,3 +488,64 @@ def test_recommendation_reasons_are_generalized_and_ui_mode_is_never_exposed() -
         "비슷한 연령대예요",
     ]
     assert all("모드" not in reason and "장애" not in reason for reason in reasons)
+
+
+def test_profile_similarity_reason_is_retired() -> None:
+    """소개 코사인이 아무리 높아도 문구가 나가면 안 된다.
+
+    임계값 0.5에서 추천의 92.5%에 붙으면서 SHAP 뒷받침률이 36.1%였고, 0.75로 올리면
+    노출이 6.5%로 떨어져 어느 값에서도 정보 가치가 없어 폐기했다.
+    """
+
+    reasons = build_recommendation_reasons({"f_profile_available": 1.0, "f_profile_cosine": 0.99})
+
+    assert reasons == []
+    assert "소개 내용이 비슷해요" not in ALLOWED_RECOMMENDATION_REASONS
+
+
+def test_tag_reason_needs_minimum_overlap() -> None:
+    """겹침 1개로 문구를 켜면 추천 대부분에 붙어 정보가 없다(SHAP 뒷받침률 57.3%)."""
+
+    below = build_recommendation_reasons({"f_tag_overlap": 2.0})
+    at_threshold = build_recommendation_reasons({"f_tag_overlap": 3.0})
+
+    assert below == []
+    assert at_threshold == ["관심사가 비슷해요"]
+
+
+def test_tag_reason_threshold_is_policy_driven() -> None:
+    relaxed = MatchingInputPolicy(tag_reason_min_overlap=1)
+
+    assert build_recommendation_reasons({"f_tag_overlap": 1.0}, policy=relaxed) == [
+        "관심사가 비슷해요"
+    ]
+
+
+def test_age_reason_uses_age_difference_not_band_match() -> None:
+    """연령 문구는 기여 4.2%인 band 일치가 아니라 31.0%인 f_age_diff 에 건다."""
+
+    # band 가 같아도 나이차가 크면 문구를 내지 않는다.
+    band_only = build_recommendation_reasons(
+        {
+            "f_age_band_match": 1.0,
+            "f_age_band_available": 1.0,
+            "f_age_available": 1.0,
+            "f_age_diff": 9.0,
+        }
+    )
+    # band 정보가 없어도 나이차가 가까우면 문구를 낸다.
+    close_ages = build_recommendation_reasons({"f_age_available": 1.0, "f_age_diff": 4.0})
+
+    assert band_only == []
+    assert close_ages == ["비슷한 연령대예요"]
+
+
+def test_age_reason_requires_age_availability() -> None:
+    """나이를 모르는데 f_age_diff 기본값 0.0 때문에 문구가 켜지면 안 된다."""
+
+    assert build_recommendation_reasons({"f_age_available": 0.0, "f_age_diff": 0.0}) == []
+
+
+def test_tag_reason_threshold_cannot_exceed_max_tags() -> None:
+    with pytest.raises(ValueError, match="tag_reason_min_overlap"):
+        MatchingInputPolicy(max_tags=2, tag_reason_min_overlap=3)
