@@ -21,6 +21,20 @@ def test_frozen_blind_fixture_is_balanced_and_unique():
     assert len({case["id"] for case in cases}) == 60
 
 
+def test_fresh_v8_blind_fixture_is_balanced_by_label_and_slice():
+    cases = MODULE.load_cases(Path(__file__).parent / "fixtures" / "safe_blind_v8.jsonl")
+
+    assert len(cases) == 40
+    assert sum(case["label"] == 0 for case in cases) == 20
+    assert sum(case["label"] == 1 for case in cases) == 20
+    assert len({case["slice"] for case in cases if case["label"] == 0}) == 5
+    assert len({case["slice"] for case in cases if case["label"] == 1}) == 5
+    assert all(
+        sum(case["slice"] == slice_name for case in cases) == 4
+        for slice_name in {case["slice"] for case in cases}
+    )
+
+
 def test_metrics_uses_expected_confusion_matrix():
     rows = [
         {"label": 0, "prediction": 0},
