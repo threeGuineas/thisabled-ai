@@ -1,0 +1,825 @@
+{
+  "schema_version": 1,
+  "model": {
+    "path": "/Users/soyun/.cache/huggingface/hub/models--soyuncj--module2/snapshots/ecb31a428e74dfc393617a6a4a95ecc4cb7e6d67/module2_lambdamart_v2.pkl",
+    "sha256": "ffb67e89406ee69731cd456f8a5794a8ff49a16127f015e1e8989d8337ab1fe5",
+    "columns": [
+      "f_effective_cosine",
+      "f_profile_cosine",
+      "f_profile_l2",
+      "f_authored_cosine",
+      "f_authored_available",
+      "f_liked_cosine",
+      "f_liked_available",
+      "f_liked_authored_cosine",
+      "f_tag_overlap",
+      "f_tag_jaccard",
+      "f_common_friend_count",
+      "f_age_diff",
+      "f_age_available",
+      "f_age_band_match",
+      "f_ui_mode_match"
+    ],
+    "metrics": {
+      "v2_full": {
+        "ndcg@5": 0.7721639322500758,
+        "ndcg@10": 0.8196806119527938,
+        "n_features": 15
+      },
+      "v2_no_content": {
+        "ndcg@5": 0.7646390549608202,
+        "ndcg@10": 0.8115972042160688,
+        "n_features": 10
+      },
+      "legacy_embedding": {
+        "ndcg@5": 0.39210847212656913,
+        "ndcg@10": 0.4863242966922078,
+        "n_features": 2
+      }
+    }
+  },
+  "sample": {
+    "n_users": 10000,
+    "n_queries": 1000,
+    "n_candidates": 20,
+    "seed": 42,
+    "n_pairs": 16741,
+    "encoder": {
+      "model_name": "jhgan/ko-sroberta-multitask",
+      "resolved_revision": "8fca7c9c98c26599be0e14b9916b11a756a26f19",
+      "device": "mps:0",
+      "parameter_dtype": "torch.float32",
+      "configured_max_seq_length": 256,
+      "actual_max_seq_length": 128,
+      "pooling": "mean",
+      "normalize_embeddings": false
+    }
+  },
+  "global_importance": [
+    {
+      "feature": "f_age_diff",
+      "mean_abs_shap": 0.9899567200569316,
+      "share": 0.31028229811805585,
+      "user_facing_reason": null
+    },
+    {
+      "feature": "f_effective_cosine",
+      "mean_abs_shap": 0.5586916964209805,
+      "share": 0.1751108305977333,
+      "user_facing_reason": null
+    },
+    {
+      "feature": "f_common_friend_count",
+      "mean_abs_shap": 0.34970158961322656,
+      "share": 0.10960702693597463,
+      "user_facing_reason": "공통 친구가 있어요"
+    },
+    {
+      "feature": "f_liked_cosine",
+      "mean_abs_shap": 0.2299040720787117,
+      "share": 0.07205887124760302,
+      "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+    },
+    {
+      "feature": "f_liked_authored_cosine",
+      "mean_abs_shap": 0.19824929310774472,
+      "share": 0.062137308651446406,
+      "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+    },
+    {
+      "feature": "f_authored_cosine",
+      "mean_abs_shap": 0.15343368725932802,
+      "share": 0.04809074591545121,
+      "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+    },
+    {
+      "feature": "f_profile_cosine",
+      "mean_abs_shap": 0.14681147891671123,
+      "share": 0.046015146061908596,
+      "user_facing_reason": "소개 내용이 비슷해요"
+    },
+    {
+      "feature": "f_age_band_match",
+      "mean_abs_shap": 0.13554000792588736,
+      "share": 0.04248232704937368,
+      "user_facing_reason": "비슷한 연령대예요"
+    },
+    {
+      "feature": "f_profile_l2",
+      "mean_abs_shap": 0.13355003662922382,
+      "share": 0.04185861001749958,
+      "user_facing_reason": "소개 내용이 비슷해요"
+    },
+    {
+      "feature": "f_tag_overlap",
+      "mean_abs_shap": 0.13265164932333315,
+      "share": 0.04157702833597333,
+      "user_facing_reason": "관심사가 비슷해요"
+    },
+    {
+      "feature": "f_age_available",
+      "mean_abs_shap": 0.11071929594561025,
+      "share": 0.03470276719778356,
+      "user_facing_reason": null
+    },
+    {
+      "feature": "f_ui_mode_match",
+      "mean_abs_shap": 0.04512106792666949,
+      "share": 0.014142303765585599,
+      "user_facing_reason": null
+    },
+    {
+      "feature": "f_authored_available",
+      "mean_abs_shap": 0.005222738894345803,
+      "share": 0.0016369639134476252,
+      "user_facing_reason": null
+    },
+    {
+      "feature": "f_liked_available",
+      "mean_abs_shap": 0.0009500431847590336,
+      "share": 0.0002977721921635898,
+      "user_facing_reason": null
+    },
+    {
+      "feature": "f_tag_jaccard",
+      "mean_abs_shap": 0.0,
+      "share": 0.0,
+      "user_facing_reason": "관심사가 비슷해요"
+    }
+  ],
+  "unexposed_feature_share": {
+    "f_age_diff": 0.31028229811805585,
+    "f_effective_cosine": 0.1751108305977333,
+    "f_age_available": 0.03470276719778356,
+    "f_ui_mode_match": 0.014142303765585599,
+    "f_authored_available": 0.0016369639134476252,
+    "f_liked_available": 0.0002977721921635898
+  },
+  "reason_alignment": {
+    "n_rows": 16741,
+    "rows_with_displayed_reason": 16455,
+    "displayed_reason_count": 33951,
+    "displayed_backed_by_positive_shap": 26002,
+    "displayed_support_rate": 0.7658684574828429,
+    "top_driver_is_user_facing_rate": 0.09730601517233141,
+    "displayed_without_shap_support": {
+      "관심사가 비슷해요": 6774,
+      "소개 내용이 비슷해요": 810,
+      "관심 있는 콘텐츠가 비슷해요": 233,
+      "비슷한 연령대예요": 109,
+      "공통 친구가 있어요": 23
+    },
+    "shap_supported_but_not_displayed": {
+      "관심 있는 콘텐츠가 비슷해요": 13440,
+      "소개 내용이 비슷해요": 8691,
+      "비슷한 연령대예요": 20
+    }
+  },
+  "samples": [
+    {
+      "row": 0,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "공통 친구가 있어요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "공통 친구가 있어요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_effective_cosine",
+          "shap": 0.34637081996003416,
+          "value": 0.7212684154510498,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_liked_cosine",
+          "shap": 0.18443691231384526,
+          "value": 0.0,
+          "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": 0.1765520815983777,
+          "value": 1.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        }
+      ]
+    },
+    {
+      "row": 1,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "관심 있는 콘텐츠가 비슷해요",
+        "비슷한 연령대예요",
+        "소개 내용이 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "비슷한 연령대예요",
+        "관심사가 비슷해요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": 1.4459575992447624,
+          "value": 2.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_effective_cosine",
+          "shap": 0.8857512134473304,
+          "value": 0.7643289566040039,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_liked_cosine",
+          "shap": 0.23408633588285277,
+          "value": 0.0,
+          "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+        }
+      ]
+    },
+    {
+      "row": 2,
+      "displayed_reasons": [
+        "관심사가 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": -1.5224904117604146,
+          "value": 32.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": -0.25046421741523706,
+          "value": 0.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        },
+        {
+          "feature": "f_profile_cosine",
+          "shap": -0.24631394014849214,
+          "value": 0.6172216534614563,
+          "user_facing_reason": "소개 내용이 비슷해요"
+        }
+      ]
+    },
+    {
+      "row": 3,
+      "displayed_reasons": [
+        "관심사가 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": 0.508097544921462,
+          "value": 6.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": -0.3559604973170225,
+          "value": 0.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        },
+        {
+          "feature": "f_liked_cosine",
+          "shap": 0.2157618364836467,
+          "value": 0.0,
+          "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+        }
+      ]
+    },
+    {
+      "row": 4,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "소개 내용이 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": -0.8446831723246426,
+          "value": 16.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_effective_cosine",
+          "shap": 0.28921458962347396,
+          "value": 0.699112057685852,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": -0.21243931620770518,
+          "value": 0.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        }
+      ]
+    },
+    {
+      "row": 5,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "공통 친구가 있어요",
+        "비슷한 연령대예요",
+        "소개 내용이 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "공통 친구가 있어요",
+        "관심 있는 콘텐츠가 비슷해요",
+        "비슷한 연령대예요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": 1.33503744728409,
+          "value": 2.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_effective_cosine",
+          "shap": 0.6673756353527345,
+          "value": 0.7528495788574219,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": 0.48250981433544193,
+          "value": 2.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        }
+      ]
+    },
+    {
+      "row": 6,
+      "displayed_reasons": [
+        "관심사가 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "관심사가 비슷해요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_common_friend_count",
+          "shap": -0.3607109105724076,
+          "value": 0.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        },
+        {
+          "feature": "f_effective_cosine",
+          "shap": -0.2429158940678138,
+          "value": 0.6358813047409058,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_liked_cosine",
+          "shap": 0.2186027695477999,
+          "value": 0.0,
+          "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+        }
+      ]
+    },
+    {
+      "row": 7,
+      "displayed_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "공통 친구가 있어요",
+        "소개 내용이 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "공통 친구가 있어요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_effective_cosine",
+          "shap": 1.281208189005249,
+          "value": 0.7794996500015259,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_age_diff",
+          "shap": -1.0476026570115216,
+          "value": 17.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_profile_cosine",
+          "shap": -0.43124782358249564,
+          "value": 0.7317198514938354,
+          "user_facing_reason": "소개 내용이 비슷해요"
+        }
+      ]
+    },
+    {
+      "row": 8,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "관심 있는 콘텐츠가 비슷해요",
+        "비슷한 연령대예요",
+        "소개 내용이 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심사가 비슷해요",
+        "관심 있는 콘텐츠가 비슷해요",
+        "소개 내용이 비슷해요",
+        "비슷한 연령대예요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": 1.514996821432823,
+          "value": 2.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_effective_cosine",
+          "shap": 0.6619249020698239,
+          "value": 0.7480016350746155,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_tag_overlap",
+          "shap": 0.330628826568511,
+          "value": 5.0,
+          "user_facing_reason": "관심사가 비슷해요"
+        }
+      ]
+    },
+    {
+      "row": 9,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "공통 친구가 있어요"
+      ],
+      "shap_supported_reasons": [
+        "공통 친구가 있어요",
+        "소개 내용이 비슷해요",
+        "관심 있는 콘텐츠가 비슷해요",
+        "관심사가 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": -1.0187786343440195,
+          "value": 20.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": 0.5986053953993035,
+          "value": 2.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        },
+        {
+          "feature": "f_effective_cosine",
+          "shap": -0.516880411169048,
+          "value": 0.6439709067344666,
+          "user_facing_reason": null
+        }
+      ]
+    },
+    {
+      "row": 10,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "공통 친구가 있어요",
+        "비슷한 연령대예요"
+      ],
+      "shap_supported_reasons": [
+        "소개 내용이 비슷해요",
+        "공통 친구가 있어요",
+        "관심 있는 콘텐츠가 비슷해요",
+        "비슷한 연령대예요",
+        "관심사가 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": 1.7377031900516104,
+          "value": 1.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_profile_l2",
+          "shap": 0.24387476936789804,
+          "value": 8.889835357666016,
+          "user_facing_reason": "소개 내용이 비슷해요"
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": 0.21062545072440902,
+          "value": 1.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        }
+      ]
+    },
+    {
+      "row": 11,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "관심 있는 콘텐츠가 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": -0.9979340345483072,
+          "value": 19.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": -0.22608065878207964,
+          "value": 0.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        },
+        {
+          "feature": "f_effective_cosine",
+          "shap": -0.20239638266877522,
+          "value": 0.7049602270126343,
+          "user_facing_reason": null
+        }
+      ]
+    },
+    {
+      "row": 12,
+      "displayed_reasons": [
+        "관심사가 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "소개 내용이 비슷해요",
+        "관심사가 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": -0.9877004463276448,
+          "value": 20.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_effective_cosine",
+          "shap": 0.6642311835247876,
+          "value": 0.7300326824188232,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_liked_cosine",
+          "shap": 0.2559863598987125,
+          "value": 0.0,
+          "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+        }
+      ]
+    },
+    {
+      "row": 13,
+      "displayed_reasons": [
+        "관심사가 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "관심사가 비슷해요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_effective_cosine",
+          "shap": 1.294736319879979,
+          "value": 0.7635496854782104,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_age_diff",
+          "shap": -0.98412766576702,
+          "value": 18.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_liked_authored_cosine",
+          "shap": 0.28286477476095206,
+          "value": 0.0,
+          "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+        }
+      ]
+    },
+    {
+      "row": 14,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "공통 친구가 있어요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "공통 친구가 있어요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": -1.0542932821302398,
+          "value": 14.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_effective_cosine",
+          "shap": 0.5343062885620158,
+          "value": 0.7343156337738037,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_authored_cosine",
+          "shap": -0.48887023675954483,
+          "value": 0.5994076728820801,
+          "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+        }
+      ]
+    },
+    {
+      "row": 15,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "소개 내용이 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "소개 내용이 비슷해요",
+        "관심사가 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_effective_cosine",
+          "shap": 0.8006594565569577,
+          "value": 0.7291274070739746,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_age_diff",
+          "shap": -0.5880948746935653,
+          "value": 12.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_liked_authored_cosine",
+          "shap": 0.3047764274206943,
+          "value": 0.0,
+          "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+        }
+      ]
+    },
+    {
+      "row": 16,
+      "displayed_reasons": [
+        "관심사가 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "소개 내용이 비슷해요",
+        "관심 있는 콘텐츠가 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_authored_cosine",
+          "shap": -0.38916194624317174,
+          "value": 0.6140770316123962,
+          "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": -0.3068402519770159,
+          "value": 0.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        },
+        {
+          "feature": "f_profile_l2",
+          "shap": 0.26758312580541277,
+          "value": 9.397046089172363,
+          "user_facing_reason": "소개 내용이 비슷해요"
+        }
+      ]
+    },
+    {
+      "row": 17,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "비슷한 연령대예요",
+        "소개 내용이 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "비슷한 연령대예요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": 1.5158833560877134,
+          "value": 1.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_effective_cosine",
+          "shap": 0.42844605330959246,
+          "value": 0.7295879125595093,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": -0.27567617179910214,
+          "value": 0.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        }
+      ]
+    },
+    {
+      "row": 18,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "소개 내용이 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심사가 비슷해요",
+        "관심 있는 콘텐츠가 비슷해요",
+        "소개 내용이 비슷해요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": -1.1309205781349883,
+          "value": 17.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_effective_cosine",
+          "shap": -0.3833715967035244,
+          "value": 0.6039317846298218,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": -0.2960854130162103,
+          "value": 0.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        }
+      ]
+    },
+    {
+      "row": 19,
+      "displayed_reasons": [
+        "관심사가 비슷해요",
+        "비슷한 연령대예요",
+        "소개 내용이 비슷해요"
+      ],
+      "shap_supported_reasons": [
+        "관심 있는 콘텐츠가 비슷해요",
+        "소개 내용이 비슷해요",
+        "비슷한 연령대예요"
+      ],
+      "top_features": [
+        {
+          "feature": "f_age_diff",
+          "shap": 1.3376082237818019,
+          "value": 4.0,
+          "user_facing_reason": null
+        },
+        {
+          "feature": "f_common_friend_count",
+          "shap": -0.24593220125231566,
+          "value": 0.0,
+          "user_facing_reason": "공통 친구가 있어요"
+        },
+        {
+          "feature": "f_liked_cosine",
+          "shap": 0.19854735322873918,
+          "value": 0.0,
+          "user_facing_reason": "관심 있는 콘텐츠가 비슷해요"
+        }
+      ]
+    }
+  ]
+}
