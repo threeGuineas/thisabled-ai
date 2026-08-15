@@ -55,6 +55,12 @@ def main() -> int:
         type=str,
         default=str(ROOT / "data/raw/kold/kold_v1.json"),
     )
+    parser.add_argument(
+        "--revision",
+        type=str,
+        default=None,
+        help="HF revision 고정 (재현 가능한 근거를 남기려면 지정)",
+    )
     parser.add_argument("--output-json", type=str, default=None)
     parser.add_argument("--max-length", type=int, default=128)
     parser.add_argument("--batch-size", type=int, default=64)
@@ -64,11 +70,22 @@ def main() -> int:
     print(f"사용 장비: {device}")
 
     print(f"1. 모델 로딩: {args.model_dir}")
-    tok = AutoTokenizer.from_pretrained(args.model_dir)
-    model = AutoModelForSequenceClassification.from_pretrained(args.model_dir).to(device).eval()
+    tok = AutoTokenizer.from_pretrained(args.model_dir, revision=args.revision)
+    model = (
+        AutoModelForSequenceClassification.from_pretrained(args.model_dir, revision=args.revision)
+        .to(device)
+        .eval()
+    )
+    num_labels = int(model.config.num_labels)
+    print(f"   num_labels={num_labels}")
 
     print(f"2. Test 데이터 로딩: {args.test_parquet}")
     test_df = pd.read_parquet(args.test_parquet).reset_index(drop=True)
+    if num_labels == 2:
+        # 이진 모델(정상/주의)은 0/1만 예측한다. 4분류 정답을 그대로 두면 macro-F1이
+        # 무의미해지므로 서빙과 같은 규칙(주의 이상 = 위험)으로 정답을 붕괴시킨다.
+        print("   이진 모델 → 정답 라벨을 (label > 0) 로 붕괴")
+        test_df["label"] = (test_df["label"] > 0).astype(int)
     ds = RiskTextDataset(args.test_parquet, tok, args.max_length)
     loader = DataLoader(ds, batch_size=args.batch_size, collate_fn=DataCollatorWithPadding(tok))
 
@@ -90,6 +107,14 @@ def main() -> int:
         unsmile_raw_valid_path=Path(args.unsmile_valid),
         kold_raw_path=Path(args.kold_json),
     )
+    result["model"] = {
+        "model_dir": args.model_dir,
+        "revision": args.revision,
+        "num_labels": num_labels,
+        "label_collapsed_to_binary": num_labels == 2,
+        "test_parquet": args.test_parquet,
+        "n_test": int(len(test_df)),
+    }
 
     out_path = (
         Path(args.output_json)

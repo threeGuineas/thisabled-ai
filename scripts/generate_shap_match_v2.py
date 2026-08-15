@@ -25,18 +25,11 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.data.build_pairs_v2 import LabelWeights, build_pairs  # noqa: E402
-from src.data.build_profiles_v2 import (  # noqa: E402
-    DEFAULT_CONFIG_PATH,
-    GenerationConfig,
-    generate_population,
-    load_allowed_tags,
-)
+from src.data.build_profiles_v2 import DEFAULT_CONFIG_PATH  # noqa: E402
 from src.data.matching_input import (  # noqa: E402
     ALLOWED_RECOMMENDATION_REASONS,
     MatchingInputPolicy,
@@ -44,10 +37,9 @@ from src.data.matching_input import (  # noqa: E402
     build_recommendation_reasons,
 )
 from src.data.matching_trainset import (  # noqa: E402
-    build_feature_frame_detailed,
-    embed_users,
+    build_holdout_frame,
+    load_serving_policy,
     load_v2_feature_columns,
-    split_users,
 )
 
 SCHEMA_VERSION = 1
@@ -69,25 +61,6 @@ FEATURE_REASON: dict[str, str] = {
 # build_recommendation_reasons 판정에 필요하지만 v2 15열에는 없는 가용성 플래그.
 # 특성 프레임에는 넣고 SHAP 입력에서는 뺀다.
 REASON_SUPPORT_COLUMNS = ("f_liked_authored_available",)
-
-
-def load_serving_policy(config_path: Path) -> MatchingInputPolicy:
-    """서빙이 실제로 쓰는 사유 임계값으로 정책을 만든다.
-
-    dataclass 기본값을 쓰면 배포값과 어긋난 정합성 수치가 나온다
-    (예: tag_reason_min_overlap 은 config serving 블록에서 온다).
-    """
-
-    with config_path.open(encoding="utf-8") as handle:
-        config = yaml.safe_load(handle)
-    serving = config["serving"]
-    return MatchingInputPolicy(
-        allowed_tag_ids=frozenset(load_allowed_tags(config_path)),
-        content_reason_min=float(serving["content_reason_min"]),
-        max_reasons=int(serving["max_reasons"]),
-        tag_reason_min_overlap=int(serving["tag_reason_min_overlap"]),
-        age_reason_max_diff=int(serving["age_reason_max_diff"]),
-    )
 
 
 def _assert_reason_vocabulary() -> None:
@@ -152,39 +125,17 @@ def build_evaluation_frame(
     seed: int,
     config_path: Path,
 ) -> tuple[np.ndarray, list[str], Any]:
-    """학습과 같은 경로로 평가용 페어 특성을 만든다.
-
-    반환하는 x 는 v2 15열 + 사유 판정용 가용성 플래그의 상위집합이다.
-
-    주의: n_users/seed 가 대상 모델의 학습 설정과 같아야 test 분할이 실제 holdout 이 된다.
-    다르면 같은 생성기에서 뽑은 '대표 모집단'일 뿐 holdout 이 아니므로, 그렇게 보고해야 한다.
-    기본값은 train_match_v2.py 의 학습 기본값과 맞춰 두었다.
-    """
-
-    policy = load_serving_policy(config_path)
-    generation_config = GenerationConfig(n_users=n_users, seed=seed)
-    as_of = generation_config.as_of
+    """공유 홀드아웃 프레임에 사유 판정용 가용성 플래그를 덧붙여 만든다."""
 
     frame_columns = list(dict.fromkeys([*v2_columns, *REASON_SUPPORT_COLUMNS]))
-
-    users = generate_population(generation_config, policy=policy)
-    # 학습과 같은 분할을 써서 학습에 쓰인 쪽이 아닌 test 사용자로 설명한다.
-    _train_users, test_users = split_users(users, test_ratio=0.2, seed=seed)
-    pairs = build_pairs(
-        test_users,
+    frame = build_holdout_frame(
+        encoder=encoder,
+        columns=frame_columns,
+        n_users=n_users,
         n_queries=n_queries,
         n_candidates=n_candidates,
-        weights=LabelWeights(),
-        seed=seed + 1,
-    )
-    feat = embed_users(test_users, encoder=encoder, policy=policy, as_of=as_of)
-    snapshot_by_id = {u.snapshot.user_id: u for u in test_users}
-    frame = build_feature_frame_detailed(
-        pairs,
-        feat,
-        columns=frame_columns,
-        snapshot_by_id=snapshot_by_id,
-        as_of=as_of,
+        seed=seed,
+        config_path=config_path,
     )
     return frame.x, frame_columns, frame
 

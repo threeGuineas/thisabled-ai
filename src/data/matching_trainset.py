@@ -20,8 +20,14 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from src.data.build_pairs_v2 import PairRecord
-from src.data.build_profiles_v2 import DEFAULT_CONFIG_PATH, SyntheticUser
+from src.data.build_pairs_v2 import LabelWeights, PairRecord, build_pairs
+from src.data.build_profiles_v2 import (
+    DEFAULT_CONFIG_PATH,
+    GenerationConfig,
+    SyntheticUser,
+    generate_population,
+    load_allowed_tags,
+)
 from src.data.matching_input import (
     MatchingInputPolicy,
     PreparedUserFeatures,
@@ -88,6 +94,69 @@ def load_v2_feature_columns(config_path: Path | None = None) -> list[str]:
     if not columns:
         raise ValueError("v2_pair_features must not be empty")
     return columns
+
+
+def load_serving_policy(config_path: Path | None = None) -> MatchingInputPolicy:
+    """서빙이 실제로 쓰는 정책(사유 임계값 포함)을 config에서 만든다.
+
+    dataclass 기본값을 쓰면 배포값과 어긋난 수치가 나오므로, 배포 동작을 설명하거나
+    평가하는 쪽은 반드시 이 로더를 거친다.
+    """
+
+    path = config_path or DEFAULT_CONFIG_PATH
+    with path.open(encoding="utf-8") as handle:
+        config = yaml.safe_load(handle)
+    serving = config["serving"]
+    return MatchingInputPolicy(
+        allowed_tag_ids=frozenset(load_allowed_tags(path)),
+        content_reason_min=float(serving["content_reason_min"]),
+        max_reasons=int(serving["max_reasons"]),
+        tag_reason_min_overlap=int(serving["tag_reason_min_overlap"]),
+        age_reason_max_diff=int(serving["age_reason_max_diff"]),
+    )
+
+
+def build_holdout_frame(
+    *,
+    encoder: TextEncoder,
+    columns: list[str],
+    n_users: int,
+    n_queries: int,
+    n_candidates: int,
+    seed: int,
+    config_path: Path | None = None,
+    test_ratio: float = 0.2,
+) -> DetailedFeatureFrame:
+    """학습과 같은 경로로 test 분할의 페어 특성 프레임을 만든다.
+
+    SHAP 근거·NDCG 재측정처럼 배포 모델을 사후 평가하는 쪽이 공유한다. 분할·페어 생성·
+    제외 규칙이 학습과 어긋나면 두 산출물의 수치를 서로 비교할 수 없기 때문에 한곳에 둔다.
+
+    주의: n_users/seed 가 대상 모델의 학습 설정과 같아야 test 분할이 실제 holdout 이다.
+    다르면 같은 생성기에서 뽑은 '대표 모집단'일 뿐이므로 그렇게 보고해야 한다.
+    """
+
+    policy = load_serving_policy(config_path)
+    generation_config = GenerationConfig(n_users=n_users, seed=seed)
+    as_of = generation_config.as_of
+
+    users = generate_population(generation_config, policy=policy)
+    _train_users, test_users = split_users(users, test_ratio=test_ratio, seed=seed)
+    pairs = build_pairs(
+        test_users,
+        n_queries=n_queries,
+        n_candidates=n_candidates,
+        weights=LabelWeights(),
+        seed=seed + 1,
+    )
+    feat = embed_users(test_users, encoder=encoder, policy=policy, as_of=as_of)
+    return build_feature_frame_detailed(
+        pairs,
+        feat,
+        columns=columns,
+        snapshot_by_id={u.snapshot.user_id: u for u in test_users},
+        as_of=as_of,
+    )
 
 
 def split_users(

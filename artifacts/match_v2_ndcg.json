@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "model": {
+    "path": "/private/tmp/claude-501/-Users-soyun-thisabled-ai/ae40cffb-abed-4610-b4f6-a70c3f903c0b/scratchpad/module2_v2.pkl",
+    "sha256": "ffb67e89406ee69731cd456f8a5794a8ff49a16127f015e1e8989d8337ab1fe5",
+    "columns": [
+      "f_effective_cosine",
+      "f_profile_cosine",
+      "f_profile_l2",
+      "f_authored_cosine",
+      "f_authored_available",
+      "f_liked_cosine",
+      "f_liked_available",
+      "f_liked_authored_cosine",
+      "f_tag_overlap",
+      "f_tag_jaccard",
+      "f_common_friend_count",
+      "f_age_diff",
+      "f_age_available",
+      "f_age_band_match",
+      "f_ui_mode_match"
+    ]
+  },
+  "sample": {
+    "n_users": 10000,
+    "n_queries": 1000,
+    "n_candidates": 20,
+    "seed": 42,
+    "n_pairs": 16741,
+    "n_scored_queries": 986,
+    "encoder": {
+      "model_name": "jhgan/ko-sroberta-multitask",
+      "resolved_revision": "8fca7c9c98c26599be0e14b9916b11a756a26f19",
+      "device": "mps:0",
+      "parameter_dtype": "torch.float32",
+      "configured_max_seq_length": 256,
+      "actual_max_seq_length": 128,
+      "pooling": "mean",
+      "normalize_embeddings": false
+    }
+  },
+  "measured": {
+    "ndcg@5": 0.7721639322500758,
+    "ndcg@10": 0.8196806119527937
+  },
+  "recorded_in_bundle": {
+    "ndcg@5": 0.7721639322500758,
+    "ndcg@10": 0.8196806119527938
+  },
+  "gate": {
+    "metric": "ndcg@10",
+    "threshold": 0.7,
+    "pass": true
+  },
+  "recorded_vs_measured_diff": {
+    "ndcg@5": 0.0,
+    "ndcg@10": -1.1102230246251565e-16
+  }
+}

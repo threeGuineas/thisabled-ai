@@ -1,0 +1,164 @@
+{
+  "unsmile_7_groups": {
+    "groups": {
+      "여성/가족": {
+        "n": 199,
+        "n_pos": 199,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.49747474747474746,
+        "recall": 0.9899497487437185
+      },
+      "남성": {
+        "n": 170,
+        "n_pos": 170,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 1.0,
+        "recall": 1.0
+      },
+      "성소수자": {
+        "n": 145,
+        "n_pos": 145,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.49477351916376305,
+        "recall": 0.9793103448275862
+      },
+      "인종/국적": {
+        "n": 228,
+        "n_pos": 228,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.49557522123893805,
+        "recall": 0.9824561403508771
+      },
+      "연령": {
+        "n": 66,
+        "n_pos": 66,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.4961832061068702,
+        "recall": 0.9848484848484849
+      },
+      "지역": {
+        "n": 137,
+        "n_pos": 137,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.4981684981684982,
+        "recall": 0.9927007299270073
+      },
+      "종교": {
+        "n": 130,
+        "n_pos": 130,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.4980694980694981,
+        "recall": 0.9923076923076923
+      }
+    },
+    "max_gap": 0.505226480836237,
+    "max_recall_gap": 0.020689655172413834,
+    "n_groups_measured": 7,
+    "single_class_groups": true,
+    "note": "정답이 한 클래스뿐인 집단이 있어 macro-F1(max_gap)은 해석 불가. 격차는 max_recall_gap 으로 판정할 것."
+  },
+  "kold_top_groups": {
+    "groups": {
+      "race-others": {
+        "n": 169,
+        "n_pos": 169,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.46855345911949686,
+        "recall": 0.8816568047337278
+      },
+      "others-feminist": {
+        "n": 156,
+        "n_pos": 156,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.4885245901639344,
+        "recall": 0.9551282051282052
+      },
+      "gender-LGBTQ+": {
+        "n": 128,
+        "n_pos": 128,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.4817813765182186,
+        "recall": 0.9296875
+      },
+      "religion-islam": {
+        "n": 120,
+        "n_pos": 120,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.48936170212765956,
+        "recall": 0.9583333333333334
+      },
+      "gender-female": {
+        "n": 111,
+        "n_pos": 111,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.47393364928909953,
+        "recall": 0.9009009009009009
+      },
+      "politics-progressive": {
+        "n": 108,
+        "n_pos": 108,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.49295774647887325,
+        "recall": 0.9722222222222222
+      },
+      "others-others": {
+        "n": 106,
+        "n_pos": 106,
+        "n_neg": 0,
+        "single_class": true,
+        "f1": 0.49282296650717705,
+        "recall": 0.9716981132075472
+      }
+    },
+    "max_gap": 0.024404287359376386,
+    "max_recall_gap": 0.09056541748849445,
+    "n_groups_measured": 7,
+    "single_class_groups": true,
+    "note": "정답이 한 클래스뿐인 집단이 있어 macro-F1(max_gap)은 해석 불가. 격차는 max_recall_gap 으로 판정할 것."
+  },
+  "disability_domain": {
+    "groups": {
+      "disability_yes": {
+        "n": 117,
+        "n_pos": 96,
+        "n_neg": 21,
+        "single_class": false,
+        "f1": 0.9230769230769231,
+        "recall": 0.9895833333333334
+      },
+      "disability_no": {
+        "n": 14388,
+        "n_pos": 8810,
+        "n_neg": 5578,
+        "single_class": false,
+        "f1": 0.8916838906043316,
+        "recall": 0.9422247446083996
+      }
+    },
+    "max_gap": 0.03139303247259151,
+    "max_recall_gap": 0.047358588724933814,
+    "n_groups_measured": 2,
+    "single_class_groups": false
+  },
+  "model": {
+    "model_dir": "/Users/soyun/.cache/huggingface/hub/models--soyuncj--thisabled-safety-kcelectra/snapshots/3e9c0b800661db9ce099782a76fbe181e8b23ab5",
+    "revision": "3e9c0b800661db9ce099782a76fbe181e8b23ab5",
+    "num_labels": 2,
+    "label_collapsed_to_binary": true,
+    "test_parquet": "/Users/soyun/thisabled-ai/data/processed/test.parquet",
+    "n_test": 14505
+  }
+}

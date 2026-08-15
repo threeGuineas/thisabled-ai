@@ -1,0 +1,22 @@
+{
+  "model": {
+    "path": "/private/tmp/claude-501/-Users-soyun-thisabled-ai/ae40cffb-abed-4610-b4f6-a70c3f903c0b/scratchpad/module2_v2.pkl",
+    "sha256": "ffb67e89406ee69731cd456f8a5794a8ff49a16127f015e1e8989d8337ab1fe5"
+  },
+  "k": 10,
+  "n_test_slates": 957,
+  "ui_mode_selection_rate": {
+    "hearing": 0.5362824990298797,
+    "visual": 0.5534709193245778,
+    "developmental": 0.5536812859694383
+  },
+  "ui_mode_dp_diff": 0.017398786939558653,
+  "ui_mode_dp_gate": 0.1,
+  "ui_mode_dp_pass": true,
+  "activity_median": 9.0,
+  "activity_selection_rate": {
+    "high": 0.5667278447823807,
+    "low": 0.5386393659180978
+  },
+  "activity_gap": 0.028088478864282895
+}
